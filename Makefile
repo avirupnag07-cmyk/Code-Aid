@@ -8,7 +8,7 @@ setup:
 	npm --prefix frontend ci
 
 test:
-	$(PYTHON) -m pytest -q backend/tests
+	PYTHONPATH=backend $(PYTHON) -m pytest -q backend/tests
 	npm --prefix frontend test -- --run
 
 build:
