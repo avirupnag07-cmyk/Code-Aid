@@ -76,7 +76,11 @@ export type SourceInfo = {
   file_count: number
   traceback: string
   metadata: Record<string, unknown>
+  intake: Record<string, string>
+  files: SourceFile[]
 }
+
+export type SourceFile = { path: string; kind: string; size: number }
 
 export type InvestigationSummary = {
   id: string

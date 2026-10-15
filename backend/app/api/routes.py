@@ -165,6 +165,27 @@ def _request_error(message: str, status_code: int = 400) -> HTTPException:
     return HTTPException(status_code=status_code, detail=message)
 
 
+def _file_inventory(root: Path, relative_paths: Iterable[str]) -> List[Dict[str, Any]]:
+    items: List[Dict[str, Any]] = []
+    for relative in sorted(set(relative_paths)):
+        path = root / relative
+        try:
+            size = path.stat().st_size if path.is_file() else 0
+        except OSError:
+            size = 0
+        suffix = path.suffix.lower()
+        if suffix == ".py":
+            kind = "python"
+        elif path.name.lower().startswith("test") or "tests" in path.parts:
+            kind = "test"
+        elif path.name.lower() in {"readme", "readme.md", "pyproject.toml", "requirements.txt", "requirements.lock", "setup.py", "tox.ini"}:
+            kind = "project metadata"
+        else:
+            kind = "project file"
+        items.append({"path": relative, "kind": kind, "size": size})
+    return items
+
+
 def create_router(settings: Settings, repository: InvestigationRepository, catalog: SampleCatalog) -> APIRouter:
     router = APIRouter()
 
@@ -266,6 +287,7 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
                 "file_count": project.file_count,
                 "traceback": project.traceback,
                 "metadata": project.metadata,
+                "files": _file_inventory(project.root, project.files),
                 "intake": {
                     key: value
                     for key in (

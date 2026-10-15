@@ -87,6 +87,12 @@ class InvestigationResults(Model):
     verification: VerificationResult = Field(default_factory=VerificationResult)
 
 
+class SourceFile(Model):
+    path: str
+    kind: str = "source"
+    size: int = 0
+
+
 class SourceInfo(Model):
     source_type: str
     sample_id: Optional[str] = None
@@ -95,6 +101,7 @@ class SourceInfo(Model):
     traceback: str = ""
     metadata: Dict[str, Any] = Field(default_factory=dict)
     intake: Dict[str, str] = Field(default_factory=dict)
+    files: List[SourceFile] = Field(default_factory=list)
 
 
 class InvestigationSummary(Model):

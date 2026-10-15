@@ -27,6 +27,23 @@ class ArchiveLimitError(IngestionError):
     """Raised when an archive exceeds configured resource limits."""
 
 
+IGNORED_DIRECTORIES = {
+    ".git",
+    ".hg",
+    ".svn",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    "venv",
+    "env",
+    "build",
+    "dist",
+}
+
+
 @dataclass(frozen=True)
 class IngestionLimits:
     max_members: int = 200
@@ -133,7 +150,10 @@ def _collect_files(root: Path) -> List[str]:
         if path.is_symlink():
             raise UnsafeArchiveError("symlinks are not allowed in project input")
         if path.is_file():
-            files.append(path.relative_to(root).as_posix())
+            relative = path.relative_to(root)
+            if any(part in IGNORED_DIRECTORIES for part in relative.parts):
+                continue
+            files.append(relative.as_posix())
     return files
 
 
@@ -145,6 +165,8 @@ def _copy_tree_safely(source: Path, destination: Path, limits: IngestionLimits) 
         files: List[str] = []
         for source_path in sorted(source.rglob("*"), key=lambda item: item.as_posix()):
             relative = source_path.relative_to(source)
+            if any(part in IGNORED_DIRECTORIES for part in relative.parts):
+                continue
             target = destination / relative
             _ensure_inside(destination, target)
             if source_path.is_symlink():
@@ -259,6 +281,8 @@ def ingest_zip(
                 if member.is_dir() or member.filename.endswith(("/", "\\")):
                     continue
                 path = _safe_member_path(member.filename)
+                if any(part in IGNORED_DIRECTORIES for part in path.parts):
+                    continue
                 mode = (member.external_attr >> 16) & 0xFFFF
                 if stat.S_ISLNK(mode):
                     raise UnsafeArchiveError("symlinks are not allowed in ZIP archives")
