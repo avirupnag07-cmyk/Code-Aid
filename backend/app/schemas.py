@@ -44,6 +44,7 @@ class GeneratedTest(Model):
     purpose: str
     validation_status: str = "not-checked"
     validation_message: str = ""
+    test_mode: str = "exception-reproduction"
 
 
 class ExecutionResult(Model):
@@ -74,6 +75,11 @@ class VerificationResult(Model):
     diff: str = ""
     message: str = ""
     checks: List[VerificationCheck] = Field(default_factory=list)
+    baseline_execution: Optional[ExecutionResult] = None
+    patched_execution: Optional[ExecutionResult] = None
+    original_failure_reproduced: Optional[bool] = None
+    failure_disappeared: Optional[bool] = None
+    regressions_detected: Optional[bool] = None
 
 
 class InvestigationResults(Model):

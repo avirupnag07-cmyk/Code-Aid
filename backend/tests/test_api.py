@@ -71,6 +71,9 @@ def test_patch_verification_is_non_mutating_and_rejects_escape(client):
     )
     assert result.status_code == 200
     assert result.json()["verification"]["safe_to_apply"] is True
+    assert result.json()["verification"]["status"] == "execution-unavailable"
+    assert result.json()["verification"]["baseline_execution"]["status"] == "unavailable"
+    assert result.json()["verification"]["patched_execution"]["status"] == "unavailable"
     unsafe = client.post(
         "/api/investigations/{}/verify".format(record["id"]),
         json={"file_path": "../secret.py", "content": "pass"},

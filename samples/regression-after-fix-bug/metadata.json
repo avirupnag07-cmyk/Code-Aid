@@ -7,8 +7,8 @@
   "module": "settings",
   "target_function": "load_timeout",
   "test_spec": {
-    "function": "load_timeout",
-    "args": [{}],
-    "raises": "KeyError"
+      "function": "load_timeout",
+      "args": [{}],
+      "expected": 30
   }
 }

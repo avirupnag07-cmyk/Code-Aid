@@ -21,6 +21,6 @@ All notable changes to Code-Aid are recorded here.
 
 ### Known gaps
 
-- Patched-copy behavioral verification and baseline comparison are not yet
-  implemented; the current verification endpoint is explicitly non-mutating.
+- Patch verification is limited to the generated tests; it does not run a full
+  project suite or guarantee that untested regressions are absent.
 - No authentication, remote model integration, or PDF report export.

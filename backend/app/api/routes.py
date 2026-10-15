@@ -396,8 +396,88 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
         except PatchVerificationError as exc:
             raise _request_error(str(exc), 400) from exc
         results = dict(record.get("results") or {})
+        if verification.get("status") == "verified":
+            generated_tests = [
+                item
+                for item in (results.get("generated_tests") or [])
+                if item.get("validation_status") == "valid"
+            ]
+            baseline = run_generated_tests(
+                Path(str(record["storage_path"])),
+                generated_tests,
+                timeout_seconds=settings.run_timeout_seconds,
+                docker_image=settings.docker_image,
+            )
+            patched = run_generated_tests(
+                Path(str(record["storage_path"])),
+                generated_tests,
+                timeout_seconds=settings.run_timeout_seconds,
+                docker_image=settings.docker_image,
+                file_overrides={patch.file_path: patch.content},
+            )
+            test_mode = str((generated_tests[0] if generated_tests else {}).get("test_mode") or "exception-reproduction")
+            execution_available = baseline.get("status") not in {"unavailable", "timeout", "error"} and patched.get("status") not in {"unavailable", "timeout", "error"}
+            if test_mode == "expected-output":
+                if not execution_available:
+                    original_failure_reproduced = None
+                    failure_disappeared = None
+                    regressions_detected = None
+                    verification_status = "execution-unavailable"
+                    message = "The patch is syntactically valid, but behavior could not be verified without two isolated test runs."
+                else:
+                    original_failure_reproduced = baseline.get("status") == "failed"
+                    failure_disappeared = original_failure_reproduced and patched.get("status") == "passed"
+                    regressions_detected = patched.get("status") == "failed" and not failure_disappeared
+                    if failure_disappeared:
+                        verification_status = "verified"
+                        message = "The original expected-behavior test failed before the change and passed against the proposed file. This is evidence for the fix, not a proof of complete correctness."
+                    elif not original_failure_reproduced:
+                        verification_status = "not-reproduced"
+                        message = "The baseline did not fail the generated expected-behavior test, so the proposed change cannot be verified against this record."
+                    else:
+                        verification_status = "not-fixed"
+                        message = "The baseline reproduced the expected-behavior failure, but the proposed file did not make that test pass."
+            else:
+                if not execution_available:
+                    original_failure_reproduced = None
+                    failure_disappeared = None
+                    regressions_detected = None
+                    verification_status = "execution-unavailable"
+                    message = "The patch is syntactically valid, but behavior could not be verified without two isolated test runs."
+                else:
+                    original_failure_reproduced = baseline.get("status") == "passed"
+                    failure_disappeared = original_failure_reproduced and patched.get("status") == "failed"
+                    regressions_detected = None
+                    verification_status = "behavior-changed" if failure_disappeared else "not-confirmed"
+                    message = "The reproduction test only asserts that the reported exception occurs; a changed result is not proof of a correct fix."
+            verification.update(
+                {
+                    "status": verification_status,
+                    "message": message,
+                    "baseline_execution": baseline,
+                    "patched_execution": patched,
+                    "original_failure_reproduced": original_failure_reproduced,
+                    "failure_disappeared": failure_disappeared,
+                    "regressions_detected": regressions_detected,
+                    "checks": list(verification.get("checks") or [])
+                    + [
+                        {
+                            "name": "baseline behavior",
+                            "status": "passed" if original_failure_reproduced else "warning",
+                            "message": "The original generated test recorded the reported behavior." if original_failure_reproduced else "The baseline result did not establish the reported behavior.",
+                            "evidence": [],
+                        },
+                        {
+                            "name": "patched behavior",
+                            "status": "passed" if failure_disappeared else "warning" if not execution_available else "failed",
+                            "message": "The generated expected-behavior test passed against the proposed file." if failure_disappeared else "The proposed file did not provide a passing expected-behavior result.",
+                            "evidence": [],
+                        },
+                    ],
+                }
+            )
         results["verification"] = verification
-        updated = repository.update(investigation_id, status="patch-verified", results=results)
+        updated = repository.update(investigation_id, status="patch-{}".format(verification.get("status", "checked")), results=results)
         response = _response_record(updated or record)
         response["verification"] = verification
         response["investigation"] = response.copy()

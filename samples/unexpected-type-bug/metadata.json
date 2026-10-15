@@ -7,8 +7,8 @@
   "module": "profile",
   "target_function": "normalize_username",
   "test_spec": {
-    "function": "normalize_username",
-    "args": [42],
-    "raises": "AttributeError"
+      "function": "normalize_username",
+      "args": [42],
+      "expected": "42"
   }
 }

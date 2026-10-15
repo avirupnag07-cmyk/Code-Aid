@@ -5,6 +5,7 @@ analysis safe for uploaded projects and keeps its output deterministic.
 """
 
 import ast
+import builtins
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
@@ -120,6 +121,119 @@ def _add_finding(
             "evidence": [evidence],
         }
     )
+
+
+def _known_module_names(tree: ast.AST) -> set:
+    """Collect names bound anywhere in a module for a conservative NameError rule."""
+
+    known = set(dir(builtins)) | {"True", "False", "None", "Ellipsis", "NotImplemented"}
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            known.add(node.name)
+        elif isinstance(node, ast.alias):
+            known.add((node.asname or node.name.split(".", 1)[0]))
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            known.add(node.id)
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            known.add(node.name)
+        elif isinstance(node, ast.arg):
+            known.add(node.arg)
+    return known
+
+
+def _function_signatures(tree: ast.AST) -> Dict[str, Tuple[int, Optional[int], int]]:
+    signatures: Dict[str, Tuple[int, Optional[int], int]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        positional = list(getattr(node.args, "posonlyargs", [])) + list(node.args.args)
+        minimum = max(0, len(positional) - len(node.args.defaults))
+        maximum: Optional[int] = None if node.args.vararg else len(positional)
+        signatures.setdefault(node.name, (minimum, maximum, int(getattr(node, "lineno", 1))))
+    return signatures
+
+
+def _analyze_undefined_names(
+    root: Path,
+    path: Path,
+    source_lines: Sequence[str],
+    tree: ast.AST,
+    traceback_info: TracebackInfo,
+    findings: List[Dict[str, Any]],
+) -> None:
+    known = _known_module_names(tree)
+    frame = next((item for item in reversed(traceback_info.frames) if _frame_path(root, item) == path), None)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Name) or not isinstance(node.ctx, ast.Load) or node.id in known:
+            continue
+        if traceback_info.exception_type != "NameError" and frame is None:
+            continue
+        if frame is not None and abs(int(node.lineno) - frame.line) > 2:
+            continue
+        _add_finding(
+            findings,
+            text="This name is read without a definition visible in the ingested module; it may explain the reported NameError.",
+            severity="high" if traceback_info.exception_type == "NameError" else "medium",
+            rule_id="undefined-name",
+            evidence=_evidence(root, path, int(node.lineno), source_lines, "unresolved name load"),
+        )
+
+
+def _analyze_call_signatures(
+    root: Path,
+    path: Path,
+    source_lines: Sequence[str],
+    tree: ast.AST,
+    traceback_info: TracebackInfo,
+    findings: List[Dict[str, Any]],
+) -> None:
+    signatures = _function_signatures(tree)
+    frame = next((item for item in reversed(traceback_info.frames) if _frame_path(root, item) == path), None)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+            continue
+        signature = signatures.get(node.func.id)
+        if signature is None or any(argument is not None for argument in node.args if isinstance(argument, ast.Starred)):
+            continue
+        minimum, maximum, _ = signature
+        supplied = len(node.args) + len(node.keywords)
+        if maximum is not None and minimum <= supplied <= maximum:
+            continue
+        if frame is not None and abs(int(node.lineno) - frame.line) > 2:
+            continue
+        _add_finding(
+            findings,
+            text="The call supplies {} argument(s), but the local function signature accepts {}{}; this can raise TypeError.".format(
+                supplied,
+                minimum,
+                "-{}".format(maximum) if maximum is not None else "+",
+            ),
+            severity="high" if traceback_info.exception_type == "TypeError" else "medium",
+            rule_id="function-argument-count",
+            evidence=_evidence(root, path, int(node.lineno), source_lines, "local function signature mismatch"),
+        )
+
+
+def _analyze_return_consistency(
+    root: Path,
+    path: Path,
+    source_lines: Sequence[str],
+    tree: ast.AST,
+    findings: List[Dict[str, Any]],
+) -> None:
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        returns = [item for item in ast.walk(node) if isinstance(item, ast.Return)]
+        if not returns or not any(item.value is None for item in returns) or not any(item.value is not None for item in returns):
+            continue
+        _add_finding(
+            findings,
+            text="This function returns a value on some paths and None on others; callers may receive an unexpected result.",
+            severity="medium",
+            rule_id="inconsistent-return",
+            evidence=_evidence(root, path, int(getattr(node, "lineno", 1)), source_lines, "mixed return shapes"),
+        )
 
 
 def _analyze_nodes(
@@ -265,6 +379,9 @@ def analyze_project(
             )
             continue
         parsed_files.append(path.relative_to(root).as_posix())
+        _analyze_undefined_names(root, path, lines, tree, traceback_info, findings)
+        _analyze_call_signatures(root, path, lines, tree, traceback_info, findings)
+        _analyze_return_consistency(root, path, lines, tree, findings)
         _analyze_nodes(root, path, lines, tree, traceback_info, findings)
 
     if traceback_info.frames and not any(_frame_path(root, frame) for frame in traceback_info.frames):

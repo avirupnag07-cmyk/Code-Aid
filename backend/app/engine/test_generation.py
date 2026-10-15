@@ -71,6 +71,8 @@ def _reproduction_test(traceback_info: TracebackInfo, metadata: Mapping[str, Any
     module = _module_from_metadata(metadata)
     function = _function_from_metadata(spec, metadata)
     expected = spec.get("raises") or traceback_info.exception_type
+    has_expected_value = "expected" in spec
+    expected_value = _python_literal(spec.get("expected")) if has_expected_value else None
     if not isinstance(expected, str) or expected not in _SAFE_EXCEPTIONS:
         expected = "Exception"
     args_value = spec.get("args", [])
@@ -81,6 +83,17 @@ def _reproduction_test(traceback_info: TracebackInfo, metadata: Mapping[str, Any
         call = "{}({})".format(function, ", ".join(["*{}".format(args), "**{}".format(kwargs)]))
         # Explicit import syntax makes the generated test easy to inspect and
         # keeps user-provided strings out of executable source except as literals.
+        if has_expected_value and expected_value is not None:
+            return dedent(
+                """
+                import pytest
+                from {module} import {function}
+
+
+                def test_expected_behavior_for_reported_input():
+                    assert {call} == {expected_value}
+                """.format(module=module, function=function, call=call, expected_value=expected_value)
+            ).lstrip()
         return dedent(
             """
             import pytest
@@ -141,6 +154,9 @@ def generate_tests(
     content = _reproduction_test(traceback_info, metadata)
     path = "generated_tests/test_code_aid_reproduction.py"
     validation = validate_test_content(path, content)
+    spec_value = metadata.get("test_spec")
+    spec = spec_value if isinstance(spec_value, Mapping) else {}
+    test_mode = "expected-output" if "expected" in spec else "exception-reproduction"
     return [
         {
             "path": path,
@@ -148,6 +164,7 @@ def generate_tests(
             "purpose": "Reproduce the reported {} in a focused pytest case.".format(traceback_info.exception_type),
             "validation_status": validation["status"],
             "validation_message": validation["message"],
+            "test_mode": test_mode,
         }
     ]
 

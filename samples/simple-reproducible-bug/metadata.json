@@ -7,8 +7,8 @@
   "module": "calculator",
   "target_function": "add_tax",
   "test_spec": {
-    "function": "add_tax",
-    "args": [100.0, "8"],
-    "raises": "TypeError"
+      "function": "add_tax",
+      "args": [100.0, "8"],
+      "expected": 108.0
   }
 }

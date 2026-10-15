@@ -7,8 +7,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     CODE_AID_SAMPLES=samples
 
 WORKDIR /app
-COPY backend/requirements.txt /app/backend/requirements.txt
-RUN python -m pip install --no-cache-dir -r /app/backend/requirements.txt
+COPY backend/requirements.lock /app/backend/requirements.lock
+RUN python -m pip install --no-cache-dir -r /app/backend/requirements.lock
 COPY backend /app/backend
 COPY samples /app/samples
 

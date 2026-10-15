@@ -41,6 +41,9 @@ def rank_hypotheses(
         "unchecked-numeric-conversion": 0.93,
         "syntax-error": 0.97,
         "broad-exception": 0.55,
+        "undefined-name": 0.94,
+        "function-argument-count": 0.92,
+        "inconsistent-return": 0.62,
     }
     rule_text = {
         "mixed-literal-operation": "The failure is caused by incompatible literal operand types in a binary operation.",
@@ -51,6 +54,9 @@ def rank_hypotheses(
         "unchecked-numeric-conversion": "Unvalidated input reaches a numeric conversion and can raise ValueError.",
         "syntax-error": "The project cannot execute the affected module because its Python syntax is invalid.",
         "broad-exception": "Broad exception handling may be hiding the actual failure and allowing a regression to persist.",
+        "undefined-name": "The failing path reads a name that is not visibly defined in the affected module.",
+        "function-argument-count": "A local function call supplies an argument count outside the function signature.",
+        "inconsistent-return": "The function exposes inconsistent return shapes across its paths.",
     }
     for finding in findings:
         rule_id = str(finding.get("rule_id") or "")

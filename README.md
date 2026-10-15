@@ -235,7 +235,7 @@ directly rather than using a secret manager in this local MVP.
 | `CODE_AID_MAX_ARCHIVE_MEMBER_BYTES` | `5242880` | per-member limit |
 | `CODE_AID_MAX_SOURCE_FILE_BYTES` | `524288` | source/patch limit |
 | `CODE_AID_RUN_TIMEOUT_SECONDS` | `20` | default isolated run timeout |
-| `CODE_AID_DOCKER_IMAGE` | `python:3.9-slim` | execution image name |
+| `CODE_AID_DOCKER_IMAGE` | `code-aid-runner:0.1.0` | execution image name |
 | `CODE_AID_ALLOWED_ORIGINS` | `*` | comma-separated CORS origins |
 
 Do not put tokens, credentials, source dumps, or private logs into `.env` or
@@ -374,12 +374,15 @@ deployment intentionally leaves execution unavailable rather than mounting the
 Docker socket into a network-facing API. A future production deployment should
 use a separate execution service with an explicit authorization boundary.
 
-The current generated reproduction test normally asserts that the reported
-exception is raised. A passing generated test means the reported behavior was
-reproduced; it does not prove a fix. Patch verification currently performs safe
-path checks, Python syntax checks, and a unified diff without mutating the
-stored project. It does not silently claim that a proposed patch changed runtime
-behavior.
+The generated test is either an expected-behavior regression test (when the
+sample provides an expected value) or an explicitly labeled exception
+reproduction test. A passing exception-reproduction test means the reported
+behavior was reproduced; it does not prove a fix. Patch verification performs
+safe path checks, Python syntax checks, and a unified diff without mutating the
+stored project. When Docker is available it also runs the baseline and staged
+patched copies in separate isolated containers, and only reports `verified`
+when an expected-behavior test fails on the baseline and passes on the proposed
+copy. Without the runtime it records `execution-unavailable`.
 
 ### Security model
 
@@ -427,9 +430,10 @@ generated tests are not equally specialized for every family.
   that metadata is absent, Code-Aid produces a clearly skipped template.
 - Docker is optional. Without a daemon and a prebuilt runner image, execution
   is explicitly unavailable.
-- Patch verification does not yet run a patched copy and baseline comparison;
-  it proves only that the proposed file is safe to inspect, parses as Python,
-  and differs from the current file.
+- Patch verification uses the generated tests and cannot prove behavior beyond
+  the cases those tests cover. It does not apply the patch to the stored
+  project, run a full project suite, or guarantee that untested regressions are
+  absent.
 - There is no authentication, team sharing, remote model provider, or PDF
   export in the local MVP.
 - Compose persists the database, but source execution remains unavailable by

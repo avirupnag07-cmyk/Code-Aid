@@ -66,7 +66,7 @@ serves `/docs` and `/openapi.json`).
 | `GET` | `/api/investigations/{id}` | Returns the full persisted investigation. |
 | `DELETE` | `/api/investigations/{id}` | Deletes the record and its private ingested project directory. |
 | `POST` | `/api/investigations/{id}/run-tests` | Optional JSON `{ "timeout_seconds": 20 }`; executes generated tests only in Docker and appends an execution result. |
-| `POST` | `/api/investigations/{id}/verify` | JSON `{ "file_path": "module.py", "content": "..." }` (or `path`) verifies a proposed change without mutating or executing the project. |
+| `POST` | `/api/investigations/{id}/verify` | JSON `{ "file_path": "module.py", "content": "..." }` (or `path`) checks a proposed change without mutating the stored project and, when Docker is available, compares baseline and staged-patch test runs. |
 | `GET` | `/api/investigations/{id}/report` | Downloads a `text/markdown` report. |
 
 Creation returns an object with these deliberately separate result sections:

@@ -28,6 +28,7 @@ export type GeneratedTest = {
   purpose: string
   validation_status: string
   validation_message: string
+  test_mode: string
 }
 
 export type ExecutionResult = {
@@ -58,6 +59,11 @@ export type VerificationResult = {
   diff: string
   message: string
   checks: VerificationCheck[]
+  baseline_execution?: ExecutionResult | null
+  patched_execution?: ExecutionResult | null
+  original_failure_reproduced?: boolean | null
+  failure_disappeared?: boolean | null
+  regressions_detected?: boolean | null
 }
 
 export type InvestigationResults = {

@@ -45,7 +45,7 @@ class Settings:
     max_traceback_chars: int = 100_000
     max_source_file_bytes: int = 512 * 1024
     run_timeout_seconds: int = 20
-    docker_image: str = "python:3.9-slim"
+    docker_image: str = "code-aid-runner:0.1.0"
     allowed_origins: Tuple[str, ...] = ("*",)
 
     @classmethod
@@ -69,6 +69,6 @@ class Settings:
             max_traceback_chars=_int_env("CODE_AID_MAX_TRACEBACK_CHARS", 100_000),
             max_source_file_bytes=_int_env("CODE_AID_MAX_SOURCE_FILE_BYTES", 512 * 1024),
             run_timeout_seconds=_int_env("CODE_AID_RUN_TIMEOUT_SECONDS", 20),
-            docker_image=os.getenv("CODE_AID_DOCKER_IMAGE", "python:3.9-slim"),
+            docker_image=os.getenv("CODE_AID_DOCKER_IMAGE", "code-aid-runner:0.1.0"),
             allowed_origins=origins,
         )
