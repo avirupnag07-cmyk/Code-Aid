@@ -354,9 +354,14 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
             except (UnicodeDecodeError, ValueError, TypeError) as exc:
                 raise _request_error("Invalid run-tests JSON body", 422) from exc
         results = dict(record.get("results") or {})
+        generated_tests = [
+            item
+            for item in (results.get("generated_tests") or [])
+            if item.get("validation_status") == "valid"
+        ]
         execution = run_generated_tests(
             Path(str(record["storage_path"])),
-            results.get("generated_tests") or [],
+            generated_tests,
             timeout_seconds=timeout,
             docker_image=settings.docker_image,
         )

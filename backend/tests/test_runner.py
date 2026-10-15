@@ -27,3 +27,13 @@ def test_runner_reports_timeout(monkeypatch, tmp_path: Path):
     )
     assert result["status"] == "timeout"
     assert "timeout" in result["reason"].lower()
+
+
+def test_runner_rejects_generated_path_outside_execution_directory(monkeypatch, tmp_path: Path):
+    monkeypatch.setattr(runner.shutil, "which", lambda _binary: "/usr/bin/docker")
+    result = runner.run_generated_tests(
+        tmp_path,
+        [{"path": "../escape.py", "content": "pass"}],
+    )
+    assert result["status"] == "unavailable"
+    assert "outside generated_tests" in result["reason"]
