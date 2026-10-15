@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "calculator.py", line 6, in add_tax
+    return amount + tax
+TypeError: unsupported operand type(s) for +: 'float' and 'str'

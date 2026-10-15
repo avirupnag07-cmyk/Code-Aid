@@ -1,0 +1,14 @@
+{
+  "name": "Checkout tax calculator",
+  "description": "A small checkout helper reproducibly adds a formatted tax label to a numeric amount.",
+  "category": "simple-reproducible-bug",
+  "exception_type": "TypeError",
+  "entry_file": "calculator.py",
+  "module": "calculator",
+  "target_function": "add_tax",
+  "test_spec": {
+    "function": "add_tax",
+    "args": [100.0, "8"],
+    "raises": "TypeError"
+  }
+}

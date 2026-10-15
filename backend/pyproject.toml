@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "code-aid-backend"
+version = "0.1.0"
+description = "Safe deterministic Python traceback investigation backend"
+requires-python = ">=3.9,<3.13"
+dependencies = [
+  "fastapi==0.115.6",
+  "pydantic==2.10.4",
+  "python-multipart==0.0.20",
+  "uvicorn==0.34.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

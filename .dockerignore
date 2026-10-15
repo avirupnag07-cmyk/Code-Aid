@@ -1,0 +1,9 @@
+.git
+.venv
+backend/data
+frontend/node_modules
+frontend/dist
+frontend/coverage
+*.sqlite3
+*.log
+.DS_Store

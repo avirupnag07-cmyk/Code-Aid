@@ -1,0 +1,7 @@
+# Direct runtime and offline test dependencies are pinned for Python 3.9.
+fastapi==0.115.6
+pydantic==2.10.4
+python-multipart==0.0.20
+uvicorn==0.34.0
+pytest==8.3.4
+httpx==0.28.1

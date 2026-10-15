@@ -1,0 +1,14 @@
+{
+  "name": "Settings timeout loader",
+  "description": "A configuration fix switched an optional lookup to direct indexing and regressed deployments without a timeout override.",
+  "category": "regression-after-fix",
+  "exception_type": "KeyError",
+  "entry_file": "settings.py",
+  "module": "settings",
+  "target_function": "load_timeout",
+  "test_spec": {
+    "function": "load_timeout",
+    "args": [{}],
+    "raises": "KeyError"
+  }
+}

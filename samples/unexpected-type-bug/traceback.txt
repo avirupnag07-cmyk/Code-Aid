@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "profile.py", line 5, in normalize_username
+    return value.strip().lower()
+AttributeError: 'int' object has no attribute 'strip'

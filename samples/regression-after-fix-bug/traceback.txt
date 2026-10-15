@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "settings.py", line 6, in load_timeout
+    return config["timeout"]
+KeyError: 'timeout'

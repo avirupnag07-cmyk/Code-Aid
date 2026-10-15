@@ -1,0 +1,14 @@
+{
+  "name": "Profile username normalizer",
+  "description": "A profile ingestion helper assumes a username is text even when an upstream payload provides a numeric identifier.",
+  "category": "unexpected-type-bug",
+  "exception_type": "AttributeError",
+  "entry_file": "profile.py",
+  "module": "profile",
+  "target_function": "normalize_username",
+  "test_spec": {
+    "function": "normalize_username",
+    "args": [42],
+    "raises": "AttributeError"
+  }
+}
