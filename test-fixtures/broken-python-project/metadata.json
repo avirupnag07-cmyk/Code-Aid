@@ -1,0 +1,14 @@
+{
+  "name": "Broken tax calculator",
+  "description": "A safe smoke-test project with a numeric and string type mismatch.",
+  "category": "upload-smoke-test",
+  "exception_type": "TypeError",
+  "entry_file": "calculator.py",
+  "module": "calculator",
+  "target_function": "total_with_tax",
+  "test_spec": {
+    "function": "total_with_tax",
+    "args": [100.0, "8"],
+    "expected": 108.0
+  }
+}

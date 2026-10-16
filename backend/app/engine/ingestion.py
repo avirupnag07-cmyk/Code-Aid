@@ -61,7 +61,6 @@ class IngestedProject:
     traceback: str = ""
     metadata: Dict[str, object] = field(default_factory=dict)
     files: List[str] = field(default_factory=list)
-    repository: Optional[Dict[str, object]] = None
 
     @property
     def file_count(self) -> int:

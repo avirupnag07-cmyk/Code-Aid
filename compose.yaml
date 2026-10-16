@@ -9,10 +9,6 @@ services:
       CODE_AID_SAMPLES: /app/samples
       CODE_AID_ALLOWED_ORIGINS: http://localhost:5173
       CODE_AID_DOCKER_IMAGE: code-aid-runner:0.1.0
-      CODE_AID_GITHUB_CLIENT_ID: ${CODE_AID_GITHUB_CLIENT_ID:-}
-      CODE_AID_GITHUB_CLIENT_SECRET: ${CODE_AID_GITHUB_CLIENT_SECRET:-}
-      CODE_AID_GITHUB_REDIRECT_URI: ${CODE_AID_GITHUB_REDIRECT_URI:-http://localhost:8000/api/github/callback}
-      CODE_AID_OAUTH_COOKIE_SECRET: ${CODE_AID_OAUTH_COOKIE_SECRET:-}
     volumes:
       - code_aid_data:/app/backend/data
     ports:

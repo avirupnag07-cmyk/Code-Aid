@@ -1,8 +1,5 @@
 import io
 import zipfile
-from pathlib import Path
-
-from app.engine.ingestion import IngestedProject
 
 
 def test_health_and_sample_catalog_are_available(client):
@@ -109,6 +106,37 @@ def test_invalid_creation_and_uploads_return_clear_validation_errors(client):
     assert "traversal" in unsafe_upload.json()["detail"]
 
 
+def test_repository_fields_are_unsupported_and_zip_upload_creation_still_works(client):
+    assert client.get("/api/github/status").status_code == 404
+    unsupported = client.post(
+        "/api/investigations",
+        json={
+            "repository": {"url": "https://github.com/acme/project.git", "ref": "main"},
+            "title": "Unsupported repository import",
+        },
+    )
+    assert unsupported.status_code == 422
+    assert "not supported" in unsupported.json()["detail"]
+    flat_unsupported = client.post(
+        "/api/investigations",
+        data={"repository_url": "https://example.com/source.git", "ref": "main"},
+    )
+    assert flat_unsupported.status_code == 422
+    assert "not supported" in flat_unsupported.json()["detail"]
+
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w") as zipped:
+        zipped.writestr("app.py", "raise RuntimeError('uploaded project')")
+        zipped.writestr("traceback.txt", "RuntimeError: uploaded project")
+    created = client.post(
+        "/api/investigations",
+        files={"archive": ("uploaded-project.zip", archive.getvalue(), "application/zip")},
+    )
+    assert created.status_code == 201
+    assert created.json()["source"]["source_type"] == "upload"
+    assert "repository" not in created.json()["source"]
+
+
 def test_multipart_sample_creation_accepts_form_fields(client):
     created = client.post(
         "/api/investigations",
@@ -116,45 +144,6 @@ def test_multipart_sample_creation_accepts_form_fields(client):
     )
     assert created.status_code == 201
     assert created.json()["source"]["sample_id"] == "unexpected-type-bug"
-
-
-def test_repository_creation_uses_importer_and_persists_token_free_revision_metadata(client, monkeypatch, tmp_path: Path):
-    def fake_import(url, ref, destination, **kwargs):
-        destination.mkdir(parents=True)
-        (destination / "app.py").write_text("raise RuntimeError('mock repository')")
-        (destination / "traceback.txt").write_text("RuntimeError: mock repository")
-        return IngestedProject(
-            root=destination,
-            source_type="git",
-            traceback="RuntimeError: mock repository",
-            files=["app.py", "traceback.txt"],
-            metadata={},
-            repository={
-                "provider": "github",
-                "url": url,
-                "owner": "acme",
-                "name": "project",
-                "ref": ref,
-                "sha": "0123456789abcdef0123456789abcdef01234567",
-                "subdirectory": None,
-                "imported_at": "2026-01-01T00:00:00+00:00",
-            },
-        )
-
-    monkeypatch.setattr("app.api.routes.import_repository", fake_import)
-    created = client.post(
-        "/api/investigations",
-        json={
-            "repository": {"url": "https://github.com/acme/project.git", "ref": "main"},
-            "title": "Mock repository investigation",
-        },
-    )
-    assert created.status_code == 201
-    source = created.json()["source"]
-    assert source["source_type"] == "git"
-    assert source["repository"]["sha"] == "0123456789abcdef0123456789abcdef01234567"
-    assert "repository" not in source["metadata"]
-    assert "token" not in source["metadata"]
 
 
 def test_patch_verification_is_non_mutating_and_rejects_escape(client):

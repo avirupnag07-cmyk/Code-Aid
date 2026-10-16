@@ -70,15 +70,17 @@ test execution therefore reports `unavailable` rather than executing uploaded
 code unsafely. See [Test execution](#test-execution-architecture) for the
 separate local runner setup.
 
-### Run a bundled sample investigation
+### Run a ZIP investigation
 
-The simplest path is **Open workspace → New investigation → Checkout tax
-calculator**. The same flow is available through the API:
+The web workflow accepts project ZIP archives. The repository includes a
+deliberately broken upload fixture at
+`test-fixtures/broken-python-project.zip` for a safe smoke test:
 
 ```bash
 curl -sS -X POST http://localhost:8000/api/investigations \
-  -H 'content-type: application/json' \
-  -d '{"title":"Checkout tax sample","sample_id":"simple-reproducible-bug"}'
+  -F 'title=Broken Python smoke test' \
+  -F 'traceback=TypeError: can only concatenate str (not "int") to str' \
+  -F 'archive=@test-fixtures/broken-python-project.zip'
 ```
 
 The response contains an investigation identifier and separate `facts`,
@@ -109,11 +111,7 @@ hidden dependency in the core workflow.
 
 - Public landing page with a truthful, non-running product preview.
 - Responsive workspace dashboard backed by real SQLite records.
-- New-investigation form with bundled samples and ZIP upload.
-- Read-only public Git imports over HTTPS with branch, tag, commit, and safe
-  subdirectory selection. The resolved commit SHA is stored with the record.
-- Optional GitHub OAuth authorization flow for private repository listing and
-  read-only imports when a deployment is configured with a GitHub OAuth App.
+- New-investigation form with ZIP-only project upload.
 - Extensible language adapter registry for Python, JavaScript, TypeScript, Java,
   C, C++, Go, and Rust syntax/compiler diagnostics. Availability is detected at
   runtime and unavailable toolchains are reported explicitly.
@@ -191,6 +189,9 @@ samples/
   cpp-syntax/             # adapter fixture
   go-syntax/              # adapter fixture
   rust-syntax/            # adapter fixture
+test-fixtures/
+  broken-python-project/  # credential-free ZIP upload smoke test
+  broken-python-project.zip
 frontend/
   src/components/          # shell and reusable diagnostic components
   src/pages/               # landing, workspace, docs, settings
@@ -254,18 +255,10 @@ directly rather than using a secret manager in this local MVP.
 | `CODE_AID_RUN_TIMEOUT_SECONDS` | `20` | default isolated run timeout |
 | `CODE_AID_DOCKER_IMAGE` | `code-aid-runner:0.1.0` | execution image name |
 | `CODE_AID_ALLOWED_ORIGINS` | `*` | comma-separated CORS origins |
-| `CODE_AID_GIT_TIMEOUT_SECONDS` | `60` | overall public/private Git import deadline |
-| `CODE_AID_GITHUB_CLIENT_ID` | unset | GitHub OAuth App client ID |
-| `CODE_AID_GITHUB_CLIENT_SECRET` | unset | GitHub OAuth App client secret; backend-only |
-| `CODE_AID_GITHUB_REDIRECT_URI` | unset | registered OAuth callback URL |
-| `CODE_AID_OAUTH_COOKIE_SECRET` | unset | stable signing secret for OAuth state/session cookies |
 
 Do not put tokens, credentials, source dumps, or private logs into `.env` or
-committed files. Private GitHub import remains disabled when the OAuth variables
-are blank. For a configured local OAuth App, register the callback URL exactly,
-use an HTTPS callback in deployed environments, and configure a stable random
-cookie secret. The local in-memory OAuth session is not suitable for multiple
-backend workers without a shared session store.
+committed files. The initial web workflow has no authentication and accepts
+project ZIP uploads only; keep the API behind an access-controlled deployment.
 
 ### Backend configuration
 
@@ -315,45 +308,19 @@ The canonical API prefix is `/api`:
 | GET | `/api/samples` | bundled sample catalog |
 | GET | `/api/samples/{sample_id}` | sample metadata and traceback |
 | GET | `/api/investigations` | stored summaries |
-| POST | `/api/investigations` | JSON, multipart, ZIP, or repository-based analysis |
+| POST | `/api/investigations` | Multipart ZIP analysis for the web workflow |
 | GET | `/api/investigations/{id}` | full result record |
 | DELETE | `/api/investigations/{id}` | delete record and stored source |
 | POST | `/api/investigations/{id}/run-tests` | Docker-only generated-test run |
 | POST | `/api/investigations/{id}/verify` | non-mutating proposed file check |
 | GET | `/api/investigations/{id}/report` | Markdown download |
 
-`POST /api/investigations` accepts `sample_id` or a `.zip` field named
-`archive`, `file`, `zip_file`, or `project`; it rejects choosing both. JSON can
-carry a base64 ZIP as `archive_base64`. Optional report intake fields are
+The web workflow sends a `.zip` field named `archive`. The API also accepts the
+legacy field names `file`, `zip_file`, or `project`, and JSON can carry a
+base64 ZIP as `archive_base64`. Optional report intake fields are
 `bug_description`, `reproduction_steps`, `expected_behavior`,
-`actual_behavior`, and `environment`. A repository import uses `repository`:
-`{"url":"https://github.com/org/project.git","ref":"main","subdirectory":"packages/service"}`
-or equivalent multipart fields `repository_url`, `ref`, and `subdirectory`.
-Only `github.com`, `gitlab.com`, and `bitbucket.org` HTTPS hosts are accepted.
-Git fetches use argument arrays, shallow history, no submodules, no credential
-helper, and an overall timeout. The source record stores provider, URL, owner,
-repository name, selected ref, exact resolved SHA, subdirectory, and import
-time; credentials are not stored.
-
-GitHub endpoints are:
-
-| Method | Route | Purpose |
-| --- | --- | --- |
-| GET | `/api/github/status` | configured/connected status without exposing tokens |
-| GET | `/api/github/authorize` | starts state- and PKCE-protected OAuth |
-| GET | `/api/github/callback` | exchanges the authorization code and creates an HttpOnly session |
-| GET | `/api/github/repositories` | lists repositories available to the connected account |
-| GET | `/api/github/repositories/{owner}/{name}/refs` | lists accessible repository refs |
-| POST | `/api/github/disconnect` | removes the local session |
-
-Private GitHub importing is operational only when all OAuth variables are
-configured. The current implementation uses a GitHub OAuth App and requests
-GitHub's `repo` scope because GitHub OAuth Apps do not expose a narrower private
-content-read scope. A GitHub App with an installation token is the preferred
-production hardening path. OAuth tokens are held in bounded process memory only,
-passed to Git through an ephemeral `http.extraheader` environment setting, and
-never placed in URLs, Git argv, investigation metadata, or reports. Use a
-shared session store before running multiple backend workers.
+`actual_behavior`, and `environment`. Repository imports and GitHub
+authentication are intentionally disabled for this release.
 
 FastAPI publishes the live contract at `/docs` and `/openapi.json` when the
 backend is running.
@@ -570,10 +537,10 @@ make run-backend
 make run-frontend
 ```
 
-Select all three bundled samples from `/app/new`, inspect their findings, open
-the generated-test tab, request a run, and download a report. In an environment
-without Docker, confirm that the receipt says `unavailable` and that no project
-code was executed in the API process.
+Upload `test-fixtures/broken-python-project.zip` from `/app/new`, inspect its
+findings, open the generated-test tab, request a run, and download a report. In
+an environment without Docker, confirm that the receipt says `unavailable` and
+that no project code was executed in the API process.
 
 ### Troubleshooting
 

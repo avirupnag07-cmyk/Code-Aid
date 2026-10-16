@@ -6,8 +6,8 @@ All notable changes to Code-Aid are recorded here.
 
 ### Added
 
-- Read-only public Git import with exact revision metadata and optional
-  read-only GitHub OAuth repository access.
+- ZIP-only project intake for the initial web workflow; Git repository import
+  and GitHub authentication are intentionally disabled.
 - Deliberately broken per-language fixtures and native diagnostic validation
   tests.
 - Shared language adapter registry with live `/api/languages` support matrix.

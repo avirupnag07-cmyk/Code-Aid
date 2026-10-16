@@ -1,23 +1,17 @@
 # Code-Aid deployment readiness
 
-Status: **published to GitHub; deployment blocked pending compatible hosting
+Status: **ZIP-only release; deployment still requires compatible hosting
 configuration**.
 
 ## Verified locally
 
-- Frontend development preview: `http://127.0.0.1:5174/`
-- Backend preview: `http://127.0.0.1:8001/`
-- Health endpoint returned `status: ok`.
-- Public Git import was exercised against the public Code-Aid repository at
-  `main`, with `samples/simple-reproducible-bug` selected. The importer pinned
-  commit `de290673fa5e48d23aaad4a6b80cfa6708bb7ff9` during this check.
 - ZIP ingestion, source detection, native diagnostics, Python analysis,
-  generated-test validation, report export, and patch verification were
-  exercised through tests and API smoke checks.
-- Diagnostic suite: **36 passed, 3 skipped**; full backend suite: **92 passed,
-  3 skipped**; frontend suite: **5 passed**; production frontend build passed.
-- GitHub OAuth status correctly reports `configured: false` in the current
-  environment because no OAuth credentials are present.
+  generated-test validation, report export, and patch verification are covered
+  by the test suite.
+- A deliberately broken, credential-free ZIP smoke-test fixture is committed at
+  `test-fixtures/broken-python-project.zip`.
+- The web UI accepts ZIP uploads only. Git repository import and GitHub OAuth
+  code and settings have been removed from this release.
 
 ## Language readiness in this environment
 
@@ -41,13 +35,9 @@ Detection is not counted as full language support. The Settings matrix and
 
 - FastAPI backend with Python 3.9.21 and the locked dependencies.
 - React/Vite frontend served by Nginx or another static server.
-- Git installed in the backend runtime for public/imported repository reads.
 - SQLite and investigation storage on a persistent, access-controlled volume.
 - A separate Docker runner and image for generated Python tests when execution
   is enabled.
-- HTTPS and a stable `CODE_AID_OAUTH_COOKIE_SECRET` for GitHub OAuth.
-- GitHub OAuth App credentials, a registered callback URL, and a deliberate
-  review of the broad `repo` scope limitation.
 
 ### Compose
 
@@ -60,10 +50,6 @@ unavailable in that deployment.
 
 - The API has no general user authentication or per-investigation
   authorization. Do not expose it as a public multi-user service.
-- OAuth sessions are process-local and expire; a multi-worker deployment needs a
-  shared encrypted session store and explicit token revocation/expiry handling.
-- The OAuth App `repo` scope is broader than least privilege. A GitHub App with
-  installation-level read permissions is preferred for production.
 - Native compiler checks are bounded but run in the backend service. They are
   not a substitute for the isolated execution runner.
 - Remote execution of arbitrary non-Python project tests is not implemented.
@@ -72,19 +58,7 @@ unavailable in that deployment.
 
 ## Publication and deployment status
 
-The approved commits were pushed to:
-
-```text
-https://github.com/avirupnag07-cmyk/Code-Aid.git
-```
-
-Approved feature baseline commit:
-
-```text
-af4a052bb8b0b5a063f98eacf56cabd699b5fc8c
-```
-
-No deployment URL exists yet. Deployment is blocked because this environment
-has no Docker daemon, hosting-provider CLI, provider configuration, or supplied
-hosting credentials. A static-only host would not be compatible with Git
-imports, SQLite persistence, or isolated execution.
+No deployment URL is recorded in this repository. Deployment requires a
+backend host with persistent storage for SQLite/source data and a static
+frontend host configured with the backend API prefix. Keep provider URLs and
+credentials in the deployment dashboard, not in this repository.

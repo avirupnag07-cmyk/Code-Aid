@@ -47,11 +47,6 @@ class Settings:
     run_timeout_seconds: int = 20
     docker_image: str = "code-aid-runner:0.1.0"
     allowed_origins: Tuple[str, ...] = ("*",)
-    git_timeout_seconds: int = 60
-    github_client_id: Optional[str] = None
-    github_client_secret: Optional[str] = None
-    github_redirect_uri: Optional[str] = None
-    oauth_cookie_secret: Optional[str] = None
 
     @classmethod
     def from_env(cls, project_root: Optional[Path] = None) -> "Settings":
@@ -76,9 +71,4 @@ class Settings:
             run_timeout_seconds=_int_env("CODE_AID_RUN_TIMEOUT_SECONDS", 20),
             docker_image=os.getenv("CODE_AID_DOCKER_IMAGE", "code-aid-runner:0.1.0"),
             allowed_origins=origins,
-            git_timeout_seconds=_int_env("CODE_AID_GIT_TIMEOUT_SECONDS", 60),
-            github_client_id=os.getenv("CODE_AID_GITHUB_CLIENT_ID") or os.getenv("GITHUB_CLIENT_ID") or None,
-            github_client_secret=os.getenv("CODE_AID_GITHUB_CLIENT_SECRET") or os.getenv("GITHUB_CLIENT_SECRET") or None,
-            github_redirect_uri=os.getenv("CODE_AID_GITHUB_REDIRECT_URI") or os.getenv("GITHUB_REDIRECT_URI") or None,
-            oauth_cookie_secret=os.getenv("CODE_AID_OAUTH_COOKIE_SECRET") or os.getenv("OAUTH_COOKIE_SECRET") or None,
         )

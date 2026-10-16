@@ -48,7 +48,7 @@ python3 -m venv .venv
 cd frontend
 npm ci
 npm run dev`}</pre>
-            <p>Open <code>http://localhost:5173</code>. Select “Checkout tax calculator” from the sample picker, then analyze. The API is also documented at <code>http://localhost:8000/docs</code>.</p>
+            <p>Open <code>http://localhost:5173</code>. Create an investigation, upload a project ZIP, paste the reported error, then analyze. The API is also documented at <code>http://localhost:8000/docs</code>.</p>
           </DocSection>
 
           <DocSection id="architecture" title="Architecture">
@@ -68,7 +68,7 @@ npm run dev`}</pre>
               <li><strong>Traceback parsing.</strong> Common Python exception families and frames are extracted from complete or pytest-prefixed traces. Malformed input returns a validation error.</li>
                <li><strong>Static analysis.</strong> Python AST parsing matches deterministic rules, including unresolved names, local function argument mismatches, unsafe mapping lookup, attribute access, numeric conversion, mixed literal operations, inconsistent returns, and broad exception handling. Other adapters normalize native compiler/parser diagnostics.</li>
               <li><strong>Hypotheses.</strong> Findings and the exception family are ranked with stable rules. A score is a confidence signal, not a diagnosis.</li>
-               <li><strong>Test generation.</strong> Bundled Python metadata can provide a module, function, args, and expected output. The generated pytest source is parsed and structurally checked. Non-Python projects are not given a misleading Python test; their matrix entry says when generation is not configured.</li>
+               <li><strong>Test generation.</strong> Python metadata in the uploaded ZIP can provide a module, function, args, and expected output. The generated pytest source is parsed and structurally checked. Non-Python projects are not given a misleading Python test; their matrix entry says when generation is not configured.</li>
               <li><strong>Execution.</strong> Only Docker is eligible. The runner uses no network, no privileged flag, bounded CPU/memory/PIDs, read-only project mounts, and a timeout. Missing Docker returns <code>unavailable</code>.</li>
               <li><strong>Verification.</strong> Proposed complete file contents are checked for safe relative paths, size, Python syntax, and a unified diff. When Docker is available, baseline and staged-patch test runs are compared without mutating the stored project.</li>
             </ol>

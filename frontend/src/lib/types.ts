@@ -101,18 +101,6 @@ export type SourceInfo = {
   intake: Record<string, string>
   files: SourceFile[]
   detected_languages?: string[]
-  repository?: RepositoryMetadata | null
-}
-
-export type RepositoryMetadata = {
-  provider: string
-  url: string
-  owner: string
-  name: string
-  ref: string
-  sha: string
-  subdirectory?: string | null
-  imported_at: string
 }
 
 export type SourceFile = { path: string; kind: string; size: number }
@@ -134,34 +122,16 @@ export type Investigation = InvestigationSummary & {
   results: InvestigationResults
 }
 
-export type Sample = {
-  id: string
-  name: string
-  description: string
-  category: string
-  exception_type: string
-  traceback: string
-  file_count: number
-  metadata: Record<string, unknown>
-}
-
 export type CreateInvestigationInput = {
   title: string
   bugDescription: string
   traceback: string
-  sampleId: string
   reproductionSteps: string
   expectedBehavior: string
   actualBehavior: string
   environment: string
   archive: File | null
-  repositoryUrl?: string
-  repositoryRef?: string
-  repositorySubdirectory?: string
 }
-
-export type GitHubStatus = { provider: 'github'; configured: boolean; connected: boolean; message: string }
-export type GitHubRepository = { id: number; full_name: string; private: boolean; clone_url: string; default_branch: string }
 
 export type LanguageSupport = {
   id: string

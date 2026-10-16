@@ -200,16 +200,10 @@ h1 em, h2 em { color: var(--lavender); font-family: var(--editorial); font-weigh
   .language-diagnostic p { color: var(--muted); font-size: 11px; line-height: 1.5; margin: 7px 0 5px; }
   .language-diagnostic small, .diagnostics-empty { color: var(--muted-dim); font: 9px/1.5 var(--mono); }
   .diagnostics-empty { margin: 14px 0 0; }
-  .source-mode-tabs { border-bottom: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 -25px 20px; padding: 0 25px; }
+  .source-mode-tabs { border-bottom: 1px solid var(--line); display: grid; grid-template-columns: repeat(2, 1fr); margin: 0 -25px 20px; padding: 0 25px; }
   .source-mode-tabs button { background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--muted-dim); font: 9px var(--mono); padding: 11px 4px 12px; }
   .source-mode-tabs button:hover, .source-mode-tabs button.active { border-bottom-color: var(--lavender); color: var(--lavender); }
-  .git-source-fields .field { margin-bottom: 15px; }
   .source-help { color: var(--muted-dim); font: 9px/1.55 var(--mono); margin: 4px 0 0; }
-  .github-source-card { border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; margin-top: 20px; padding-top: 17px; }
-  .github-source-card strong, .github-source-card small { display: block; }
-  .github-source-card strong { font-size: 11px; font-weight: 500; }
-  .github-source-card small { color: var(--muted-dim); font: 9px/1.45 var(--mono); margin-top: 4px; }
-  .github-source-card select { background: var(--bg); border: 1px solid var(--line); color: var(--text); font-size: 11px; padding: 10px; width: 100%; }
 .language-source { color: var(--muted-dim); font: 9px var(--mono); margin: 18px 0 0; }
 
 /* investigation evidence workflow */

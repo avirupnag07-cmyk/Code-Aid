@@ -9,10 +9,8 @@ boundary.
 
 - ZIP uploads are bounded by compressed size, member count, extracted bytes,
   per-member bytes, and source-file bytes.
-- Git imports are restricted to allowlisted public HTTPS providers, reject
-  credentials/query strings and unsafe revisions, use shallow fetches without
-  submodules, enforce a deadline, and copy only bounded regular files into the
-  investigation workspace.
+- Project intake is ZIP-only in the web workflow; repository URLs and OAuth are
+  not accepted.
 - Absolute paths, traversal, drive-qualified names, NUL bytes, and symlinks are
   rejected during ingestion.
 - Uploaded source is copied and parsed as data. The API does not import project
@@ -35,17 +33,9 @@ boundary.
 - The Compose web service intentionally has no Docker socket, so execution is
   unavailable there by design. Do not mount the socket into the API as a
   convenience workaround.
-- GitHub OAuth is disabled until all provider settings are configured. When
-  enabled, tokens are kept in bounded process memory and sent to Git only via a
-  child-process HTTP header configuration; they are not persisted in records,
-  URLs, argv, reports, or runner environments. Multi-worker deployments need a
-  shared expiring session store before production use.
 - Local SQLite and source storage may contain sensitive code and should be
   protected with filesystem permissions and backups appropriate to the machine.
 - There is no authentication or per-user authorization in this release.
-- The current OAuth App private-repository scope is `repo`, which is broader
-  than ideal. A GitHub App installation-token flow is the recommended future
-  hardening path for least-privilege private reads.
 - Toolchains are invoked from the server environment. Keep compiler/runtime
   installations patched and do not add unreviewed tools to the execution PATH.
 - Dependency installation, archive parsing, and compiler behavior still depend

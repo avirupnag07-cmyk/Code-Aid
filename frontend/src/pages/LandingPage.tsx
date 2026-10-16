@@ -11,13 +11,13 @@ function ProductPreview() {
         <div className="preview-sidebar">
           <div className="preview-mini-brand"><span className="mini-mark">◆</span> investigations</div>
           <div className="preview-side-item preview-side-item--active"><span>◌</span> New investigation</div>
-          <div className="preview-side-item"><span>□</span> Samples</div>
+           <div className="preview-side-item"><span>□</span> Uploads</div>
           <div className="preview-side-item"><span>⌘</span> Reports</div>
         </div>
         <div className="preview-main">
           <div className="preview-eyebrow">READY FOR INPUT</div>
           <h3>Start with the evidence you already have.</h3>
-           <p>Paste an error log or choose a bundled language sample to create a real investigation.</p>
+            <p>Paste an error log and upload a project ZIP to create a real investigation.</p>
           <div className="preview-input-lines"><span>traceback</span><span>source archive</span><span>environment</span></div>
           <div className="preview-empty-line"><span className="pulse-dot" /> no investigation running</div>
         </div>
@@ -67,13 +67,13 @@ export function LandingPage() {
 
         <section className="workflow-section" id="workflow">
           <div className="site-container"><div className="eyebrow eyebrow--muted">THE INVESTIGATION LOOP</div><h2>Four stages between “it broke” and “we know why.”</h2>
-             <div className="workflow-grid"><WorkflowStep number="01" title="Capture" text="Describe the bug, paste the error, and select a sample or upload a source archive." /><WorkflowStep number="02" title="Inspect" text="Detect source languages, run native syntax checks, and link findings to source evidence." /><WorkflowStep number="03" title="Reproduce" text="Generate a language-native test where configured, validate it, then request isolated execution." /><WorkflowStep number="04" title="Verify" text="Compare a proposed file change and export a report that records exactly what was checked." /></div>
+              <div className="workflow-grid"><WorkflowStep number="01" title="Capture" text="Describe the bug, paste the error, and upload the source archive." /><WorkflowStep number="02" title="Inspect" text="Detect source languages, run native syntax checks, and link findings to source evidence." /><WorkflowStep number="03" title="Reproduce" text="Generate a language-native test where configured, validate it, then request isolated execution." /><WorkflowStep number="04" title="Verify" text="Compare a proposed file change and export a report that records exactly what was checked." /></div>
           </div>
         </section>
 
         <section className="terminal-section site-container">
           <div className="terminal-intro"><div className="eyebrow eyebrow--muted">THE COMMAND-LINE SHAPE</div><h2>Works as a workspace first. Leaves a useful trail behind.</h2><p>Every investigation can be exported as Markdown for a pull request, issue, or handoff. The terminal panel below describes the contract; it is not a fabricated run.</p></div>
-          <div className="terminal"><div className="terminal-bar"><span className="terminal-dot terminal-dot--red" /><span className="terminal-dot terminal-dot--yellow" /><span className="terminal-dot terminal-dot--green" /><span className="terminal-title">code-aid / report</span></div><pre><code><span className="terminal-muted">$</span> <span className="terminal-command">open workspace</span>{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">source</span>      choose bundled sample or .zip{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">analysis</span>    parse traceback / inspect AST{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">evidence</span>    facts separated from hypotheses{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">execution</span>  Docker-only when available{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">report</span>     export Markdown</code></pre><div className="terminal-foot">No external model, network, or host execution is required for analysis.</div></div>
+           <div className="terminal"><div className="terminal-bar"><span className="terminal-dot terminal-dot--red" /><span className="terminal-dot terminal-dot--yellow" /><span className="terminal-dot terminal-dot--green" /><span className="terminal-title">code-aid / report</span></div><pre><code><span className="terminal-muted">$</span> <span className="terminal-command">open workspace</span>{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">source</span>      upload a project .zip{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">analysis</span>    parse traceback / inspect AST{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">evidence</span>    facts separated from hypotheses{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">execution</span>  Docker-only when available{'\n'}<span className="terminal-muted">›</span> <span className="terminal-label">report</span>     export Markdown</code></pre><div className="terminal-foot">No external model, network, or host execution is required for analysis.</div></div>
         </section>
 
         <section className="security-section site-container section-rule">
