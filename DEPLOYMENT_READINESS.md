@@ -78,7 +78,7 @@ The approved commits were pushed to:
 https://github.com/avirupnag07-cmyk/Code-Aid.git
 ```
 
-Published `main` commit:
+Approved feature baseline commit:
 
 ```text
 af4a052bb8b0b5a063f98eacf56cabd699b5fc8c
