@@ -14,6 +14,8 @@ approved or performed**.
 - ZIP ingestion, source detection, native diagnostics, Python analysis,
   generated-test validation, report export, and patch verification were
   exercised through tests and API smoke checks.
+- Diagnostic suite: **36 passed, 3 skipped**; full backend suite: **92 passed,
+  3 skipped**; frontend suite: **5 passed**; production frontend build passed.
 - GitHub OAuth status correctly reports `configured: false` in the current
   environment because no OAuth credentials are present.
 
