@@ -1,0 +1,8 @@
+{
+  "name": "Rust syntax sample",
+  "description": "A small Rust project with a syntax error for adapter analysis.",
+  "category": "language-adapter",
+  "exception_type": "RuntimeError",
+  "traceback": "RuntimeError: compiler rejected the source",
+  "entry_file": "main.rs"
+}

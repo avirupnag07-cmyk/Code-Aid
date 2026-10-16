@@ -12,7 +12,44 @@ def test_health_and_sample_catalog_are_available(client):
         "simple-reproducible-bug",
         "unexpected-type-bug",
         "regression-after-fix-bug",
+        "javascript-syntax",
+        "typescript-syntax",
+        "java-syntax",
+        "c-syntax",
+        "cpp-syntax",
+        "go-syntax",
+        "rust-syntax",
     }
+
+
+def test_language_adapter_sample_keeps_python_test_generation_disabled(client):
+    created = client.post(
+        "/api/investigations",
+        json={"sample_id": "javascript-syntax", "title": "JavaScript syntax investigation"},
+    )
+    assert created.status_code == 201
+    record = created.json()
+    assert record["source"]["detected_languages"] == ["javascript"]
+    assert record["results"]["generated_tests"] == []
+    assert record["results"]["language_analysis"]["diagnostics"]
+    assert record["results"]["facts"][-1]["text"].startswith("No language-native test generator")
+
+
+def test_language_support_matrix_reports_all_adapters_and_tool_state(client):
+    response = client.get("/api/languages")
+    assert response.status_code == 200
+    matrix = response.json()
+    assert {item["id"] for item in matrix} >= {
+        "python",
+        "javascript",
+        "typescript",
+        "java",
+        "c",
+        "cpp",
+        "go",
+        "rust",
+    }
+    assert all("available" in item and "reason" in item for item in matrix)
 
 
 def test_json_creation_persists_results_and_report(client):
@@ -28,9 +65,26 @@ def test_json_creation_persists_results_and_report(client):
     fetched = client.get("/api/investigations/" + record["id"])
     assert fetched.status_code == 200
     assert fetched.json()["title"] == "API tax investigation"
+    listed = client.get("/api/investigations")
+    summary = next(item for item in listed.json() if item["id"] == record["id"])
+    assert summary["finding_count"] == len(record["results"]["findings"])
+    assert summary["hypothesis_count"] == len(record["results"]["hypotheses"])
     report = client.get("/api/investigations/" + record["id"] + "/report")
     assert report.status_code == 200
     assert "## Ranked hypotheses" in report.text
+    assert "## Language analysis" in report.text
+
+
+def test_investigation_records_detected_languages_and_adapter_diagnostics(client):
+    created = client.post("/api/investigations", json={"sample_id": "simple-reproducible-bug"})
+    assert created.status_code == 201
+    record = created.json()
+    assert record["source"]["language"] == "python"
+    assert record["source"]["detected_languages"] == ["python"]
+    assert record["results"]["language"] == "python"
+    assert record["results"]["detected_languages"] == ["python"]
+    assert record["results"]["language_analysis"]["detected_languages"] == ["python"]
+    assert isinstance(record["results"]["language_diagnostics"], list)
 
 
 def test_invalid_creation_and_uploads_return_clear_validation_errors(client):

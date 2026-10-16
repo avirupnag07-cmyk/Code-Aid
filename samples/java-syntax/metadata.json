@@ -1,0 +1,8 @@
+{
+  "name": "Java syntax sample",
+  "description": "A small Java project with a syntax error for adapter analysis.",
+  "category": "language-adapter",
+  "exception_type": "NullPointerException",
+  "traceback": "java.lang.NullPointerException: value was null",
+  "entry_file": "Main.java"
+}

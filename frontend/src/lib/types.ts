@@ -15,6 +15,18 @@ export type Finding = {
   evidence: Evidence[]
 }
 
+export type LanguageDiagnostic = {
+  language: string
+  path: string
+  line?: number | null
+  column?: number | null
+  severity: string
+  message: string
+  tool: string
+  code: string
+  source: string
+}
+
 export type Hypothesis = {
   text: string
   score: number
@@ -73,6 +85,10 @@ export type InvestigationResults = {
   generated_tests: GeneratedTest[]
   execution_results: ExecutionResult[]
   verification: VerificationResult
+  detected_languages?: string[]
+  diagnostics?: LanguageDiagnostic[]
+  language_diagnostics?: LanguageDiagnostic[]
+  language_analysis?: Record<string, unknown>
 }
 
 export type SourceInfo = {
@@ -84,6 +100,7 @@ export type SourceInfo = {
   metadata: Record<string, unknown>
   intake: Record<string, string>
   files: SourceFile[]
+  detected_languages?: string[]
 }
 
 export type SourceFile = { path: string; kind: string; size: number }
@@ -127,3 +144,19 @@ export type CreateInvestigationInput = {
   environment: string
   archive: File | null
 }
+
+export type LanguageSupport = {
+  id: string
+  name: string
+  extensions: string[]
+  status: string
+  detection: string
+  syntax?: string
+  analysis: string
+  diagnostics?: string
+  test_generation?: string
+  execution: string
+  notes?: string
+}
+
+export type LanguagesResponse = LanguageSupport[] | { languages?: LanguageSupport[]; supported?: LanguageSupport[] }

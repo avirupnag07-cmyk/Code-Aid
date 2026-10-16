@@ -1,9 +1,10 @@
 # Code-Aid backend
 
 The backend is a Python 3.9-compatible FastAPI service for safe, deterministic
-Python traceback investigations. It parses uploaded source as data, performs
-AST analysis, ranks reproducible hypotheses, generates pytest source without
-executing it on the host, and persists every result in SQLite.
+bug investigations. It parses uploaded source as data, detects supported
+languages, runs bounded native syntax/compiler checks, performs Python AST
+analysis where applicable, ranks reproducible hypotheses, generates pytest
+source without executing it on the host, and persists every result in SQLite.
 
 ## Setup
 
@@ -54,6 +55,8 @@ serves `/docs` and `/openapi.json`).
 | Method | Route | Behavior |
 | --- | --- | --- |
 | `GET` | `/api/health` | Returns service/version/database health. |
+| `GET` | `/api/languages` | Returns the live language adapter/toolchain matrix. |
+| `GET` | `/api/language-support` | Compatibility alias for the language matrix. |
 | `GET` | `/api/samples` | Lists safe bundled sample choices and their metadata/traceback. |
 | `GET` | `/api/samples/{sample_id}` | Returns one sample descriptor. |
 

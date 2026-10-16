@@ -17,7 +17,7 @@ function ProductPreview() {
         <div className="preview-main">
           <div className="preview-eyebrow">READY FOR INPUT</div>
           <h3>Start with the evidence you already have.</h3>
-          <p>Paste a traceback or choose a bundled Python sample to create a real investigation.</p>
+           <p>Paste an error log or choose a bundled language sample to create a real investigation.</p>
           <div className="preview-input-lines"><span>traceback</span><span>source archive</span><span>environment</span></div>
           <div className="preview-empty-line"><span className="pulse-dot" /> no investigation running</div>
         </div>
@@ -56,7 +56,7 @@ export function LandingPage() {
         </section>
 
         <section className="feature-section site-container" id="features">
-          <div className="section-heading"><div><div className="eyebrow eyebrow--muted">BUILT FOR THE FIRST 30 MINUTES</div><h2>Less guessing. More evidence.</h2></div><p>The first release focuses on Python projects and keeps the core path useful without a paid AI service.</p></div>
+           <div className="section-heading"><div><div className="eyebrow eyebrow--muted">BUILT FOR THE FIRST 30 MINUTES</div><h2>Less guessing. More evidence.</h2></div><p>Native parser and compiler checks cover the languages available on your machine, without a paid AI service.</p></div>
           <div className="feature-grid">
             <Feature number="01" title="Ingest without executing" text="ZIP validation, path traversal checks, size limits, and a source inventory happen before any project code can run." code="ZIP → validate → inventory" />
             <Feature number="02" title="Read the failure in context" text="Traceback frames are resolved to source lines, then deterministic AST rules add evidence-backed findings." code="frame → AST → evidence" />
@@ -67,7 +67,7 @@ export function LandingPage() {
 
         <section className="workflow-section" id="workflow">
           <div className="site-container"><div className="eyebrow eyebrow--muted">THE INVESTIGATION LOOP</div><h2>Four stages between “it broke” and “we know why.”</h2>
-            <div className="workflow-grid"><WorkflowStep number="01" title="Capture" text="Describe the bug, paste the error, and select a sample or upload a Python ZIP." /><WorkflowStep number="02" title="Inspect" text="Resolve frames, inventory files, and surface static findings with line-level evidence." /><WorkflowStep number="03" title="Reproduce" text="Generate a test template, review it, then request isolated execution when Docker is available." /><WorkflowStep number="04" title="Verify" text="Compare a proposed file change and export a report that records exactly what was checked." /></div>
+             <div className="workflow-grid"><WorkflowStep number="01" title="Capture" text="Describe the bug, paste the error, and select a sample or upload a source archive." /><WorkflowStep number="02" title="Inspect" text="Detect source languages, run native syntax checks, and link findings to source evidence." /><WorkflowStep number="03" title="Reproduce" text="Generate a language-native test where configured, validate it, then request isolated execution." /><WorkflowStep number="04" title="Verify" text="Compare a proposed file change and export a report that records exactly what was checked." /></div>
           </div>
         </section>
 
@@ -82,7 +82,7 @@ export function LandingPage() {
 
         <section className="capabilities-section site-container">
           <div className="capabilities-heading"><div className="eyebrow eyebrow--muted">CURRENTLY SUPPORTED</div><h2>Small surface. Clear boundaries.</h2></div>
-          <div className="capability-table"><Capability label="Language" value="Python 3 source projects" /><Capability label="Tracebacks" value="10 common exception families" /><Capability label="Static analysis" value="AST rules with evidence" /><Capability label="Test format" value="pytest templates" /><Capability label="Storage" value="local SQLite" /><Capability label="Export" value="Markdown diagnostic report" /></div>
+           <div className="capability-table"><Capability label="Languages" value="Python · JS · TS · Java · C/C++ · Go · Rust" /><Capability label="Diagnostics" value="Native parser/compiler output" /><Capability label="Python analysis" value="AST rules with evidence" /><Capability label="Test format" value="pytest templates when configured" /><Capability label="Storage" value="local SQLite" /><Capability label="Export" value="Markdown diagnostic report" /></div>
         </section>
 
         <section className="open-source-section site-container" id="open-source"><div className="open-source-copy"><div className="eyebrow eyebrow--muted">OPEN BY DEFAULT</div><h2>A tool you can inspect, run, and extend locally.</h2><p>The local build is intentionally self-contained: no accounts, no paid service, and no production credentials. Read the architecture and security notes before enabling isolated execution for untrusted projects.</p><div className="hero-actions"><Link className="button button--outline" to="/docs">Read the documentation <Arrow /></Link><Link className="text-link" to="/app">Open the workspace <Arrow /></Link></div></div><div className="open-source-stamp"><span>CA</span><small>LOCAL /<br />OPEN BUILD</small></div></section>

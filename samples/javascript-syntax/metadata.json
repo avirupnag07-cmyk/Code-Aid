@@ -1,0 +1,8 @@
+{
+  "name": "JavaScript syntax sample",
+  "description": "A small JavaScript project with a syntax error for adapter analysis.",
+  "category": "language-adapter",
+  "exception_type": "SyntaxError",
+  "traceback": "SyntaxError: Unexpected token",
+  "entry_file": "index.js"
+}

@@ -2,10 +2,11 @@
 
 > **From bug reports to reproducible fixes.**
 
-Code-Aid is a local-first Bug Reproduction Engineer for Python projects. It
-turns an error report into a bounded investigation: source is inspected without
-execution, traceback frames are linked to AST findings, probable causes remain
-explicitly provisional, pytest cases are generated and validated, and every
+Code-Aid is a local-first Bug Reproduction Engineer. It turns an error report
+into a bounded investigation: source is inspected without execution, native
+language diagnostics are normalized, traceback frames are linked to Python AST
+findings where applicable, probable causes remain explicitly provisional,
+pytest cases are generated and validated for Python projects, and every
 execution or patch check is recorded as evidence.
 
 ## Quick start
@@ -16,6 +17,7 @@ execution or patch check is recorded as evidence.
 - Node.js **22.14.0** (the frontend runtime is pinned in `frontend/.nvmrc`)
 - npm 10+ (or a compatible npm release)
 - Docker is optional for local analysis, but required to execute generated tests
+  through the isolated runner
 
 ### Install
 
@@ -108,6 +110,9 @@ hidden dependency in the core workflow.
 - Public landing page with a truthful, non-running product preview.
 - Responsive workspace dashboard backed by real SQLite records.
 - New-investigation form with bundled samples and ZIP upload.
+- Extensible language adapter registry for Python, JavaScript, TypeScript, Java,
+  C, C++, Go, and Rust syntax/compiler diagnostics. Availability is detected at
+  runtime and unavailable toolchains are reported explicitly.
 - Archive path-traversal, symlink, member-count, and byte-budget protection.
 - Python traceback parsing for common exception families.
 - AST-based findings with source file, line, snippet, and rule evidence.
@@ -162,6 +167,7 @@ backend/
       ingestion.py         # sample/ZIP intake and archive safety
       traceback_parser.py  # exception/frame extraction
       analyzer.py          # source AST rules
+      language_analysis.py  # native language adapter registry
       ranking.py           # deterministic hypotheses
       test_generation.py   # pytest template and validation
       runner.py             # Docker-only execution
@@ -174,6 +180,13 @@ samples/
   simple-reproducible-bug/
   unexpected-type-bug/
   regression-after-fix-bug/
+  javascript-syntax/      # adapter fixture
+  typescript-syntax/      # adapter fixture
+  java-syntax/            # adapter fixture
+  c-syntax/               # adapter fixture
+  cpp-syntax/             # adapter fixture
+  go-syntax/              # adapter fixture
+  rust-syntax/            # adapter fixture
 frontend/
   src/components/          # shell and reusable diagnostic components
   src/pages/               # landing, workspace, docs, settings
@@ -284,6 +297,8 @@ The canonical API prefix is `/api`:
 | Method | Route | Purpose |
 | --- | --- | --- |
 | GET | `/api/health` | health and version |
+| GET | `/api/languages` | live language adapter and toolchain matrix |
+| GET | `/api/language-support` | compatibility alias for the language matrix |
 | GET | `/api/samples` | bundled sample catalog |
 | GET | `/api/samples/{sample_id}` | sample metadata and traceback |
 | GET | `/api/investigations` | stored summaries |
@@ -302,6 +317,25 @@ carry a base64 ZIP as `archive_base64`. Optional report intake fields are
 
 FastAPI publishes the live contract at `/docs` and `/openapi.json` when the
 backend is running.
+
+### Language support matrix
+
+The API and Settings page report live availability for these adapters:
+
+| Language | Syntax / static diagnostics | Test generation | Isolated execution |
+| --- | --- | --- | --- |
+| Python | `ast` plus deterministic AST rules | pytest templates when metadata is safe | Docker-only pytest runner |
+| JavaScript | `node --check` when Node is installed | not configured | not configured |
+| TypeScript | `tsc --noEmit` when TypeScript is installed | not configured | not configured |
+| Java | `javac -proc:none` | not configured | not configured |
+| C / C++ | `gcc` / `g++ -fsyntax-only` | not configured | not configured |
+| Go | `go tool compile` | not configured | not configured |
+| Rust | `rustc` metadata or offline Cargo check | not configured | not configured |
+
+Detection is extension-based and bounded. A missing toolchain produces an
+explicit `unavailable` diagnostic; it is never presented as a successful check.
+The language-adapter sample directories provide small source fixtures for each
+claimed language.
 
 ### Analysis pipeline
 
@@ -335,7 +369,15 @@ and missing traceback files. Findings contain a rule id, severity, explanation,
 and evidence with relative path, line, and snippet. These rules are useful
 signals, not a complete Python linter or proof of root cause.
 
-#### 4. Hypotheses and generated tests
+#### 4. Native language analysis
+
+The adapter registry detects source files and invokes only parser/compiler check
+modes with argument arrays, timeouts, bounded output, and no project import.
+Diagnostics are normalized to language, path, line, column, severity, message,
+tool, and source fields. Python projects additionally receive the existing AST
+rules. Non-Python projects do not receive a misleading Python test template.
+
+#### 5. Hypotheses and generated tests
 
 The ranking engine combines the exception family with matching static rules and
 sample metadata. Scores are deterministic and shown as confidence signals;
@@ -423,7 +465,15 @@ generated tests are not equally specialized for every family.
 
 ### Known limitations
 
-- Only Python source projects are analyzed in this release.
+- Native syntax/compiler analysis is available for Python, JavaScript,
+  TypeScript, Java, C, C++, Go, and Rust through adapters, but each adapter
+  depends on the corresponding local toolchain. The Settings matrix is the
+  source of truth for availability on the current machine.
+- Python is the only language with the current deterministic AST rule set,
+  traceback-linked hypotheses, pytest generation, and Docker execution flow.
+- Non-Python investigations currently provide source detection and normalized
+  diagnostics; language-native test generation and execution are not configured
+  yet and are shown as such.
 - The AST rule set is intentionally small and deterministic; it is not a full
   type checker, control-flow engine, or universal bug detector.
 - Generated tests need a safe sample `test_spec` to call a known function. When

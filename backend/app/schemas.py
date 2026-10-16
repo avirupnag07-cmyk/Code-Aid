@@ -31,6 +31,28 @@ class Finding(Model):
     evidence: List[Evidence] = Field(default_factory=list)
 
 
+class LanguageDiagnostic(Model):
+    """Normalized output from a language parser/compiler check."""
+
+    language: str
+    path: str
+    line: Optional[int] = None
+    column: Optional[int] = None
+    severity: str = "error"
+    message: str
+    tool: str
+    code: str = ""
+    source: str = "adapter"
+
+
+class LanguageAnalysis(Model):
+    language: Optional[str] = None
+    detected_languages: List[str] = Field(default_factory=list)
+    diagnostics: List[LanguageDiagnostic] = Field(default_factory=list)
+    analyzed_files: List[str] = Field(default_factory=list)
+    toolchains: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+
+
 class Hypothesis(Model):
     text: str
     score: float = Field(ge=0.0, le=1.0)
@@ -91,6 +113,11 @@ class InvestigationResults(Model):
     generated_tests: List[GeneratedTest] = Field(default_factory=list)
     execution_results: List[ExecutionResult] = Field(default_factory=list)
     verification: VerificationResult = Field(default_factory=VerificationResult)
+    language: Optional[str] = None
+    detected_languages: List[str] = Field(default_factory=list)
+    diagnostics: List[LanguageDiagnostic] = Field(default_factory=list)
+    language_diagnostics: List[LanguageDiagnostic] = Field(default_factory=list)
+    language_analysis: LanguageAnalysis = Field(default_factory=LanguageAnalysis)
 
 
 class SourceFile(Model):
@@ -108,6 +135,8 @@ class SourceInfo(Model):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     intake: Dict[str, str] = Field(default_factory=dict)
     files: List[SourceFile] = Field(default_factory=list)
+    language: Optional[str] = None
+    detected_languages: List[str] = Field(default_factory=list)
 
 
 class InvestigationSummary(Model):

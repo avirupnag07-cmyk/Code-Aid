@@ -1,0 +1,8 @@
+{
+  "name": "TypeScript syntax sample",
+  "description": "A small TypeScript project with a syntax error for adapter analysis.",
+  "category": "language-adapter",
+  "exception_type": "SyntaxError",
+  "traceback": "SyntaxError: TypeScript syntax error",
+  "entry_file": "index.ts"
+}

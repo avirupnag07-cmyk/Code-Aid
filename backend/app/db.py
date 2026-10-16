@@ -65,7 +65,8 @@ class InvestigationRepository:
     @staticmethod
     def _row(row: sqlite3.Row, include_results: bool = True) -> Dict[str, Any]:
         source = _loads(row["source_json"], {})
-        results = _loads(row["results_json"], {}) if include_results else None
+        stored_results = _loads(row["results_json"], {})
+        results = stored_results if include_results else None
         item: Dict[str, Any] = {
             "id": row["id"],
             "title": row["title"],
@@ -79,6 +80,13 @@ class InvestigationRepository:
         }
         if include_results:
             item["results"] = results or {}
+        else:
+            # Keep list responses lightweight while preserving the counts the
+            # dashboard needs. The previous implementation dropped results
+            # entirely and made every investigation look like it had zero
+            # findings or hypotheses.
+            item["finding_count"] = len((stored_results or {}).get("findings") or [])
+            item["hypothesis_count"] = len((stored_results or {}).get("hypotheses") or [])
         return item
 
     def create(

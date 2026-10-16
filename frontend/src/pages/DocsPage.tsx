@@ -32,7 +32,7 @@ export function DocsPage() {
           <PageIntro eyebrow="FIELD NOTES" title="Documentation" description="How Code-Aid turns an error report into a bounded, evidence-backed investigation." />
 
           <DocSection id="overview" title="A diagnostic workspace, not a chatbot">
-            <p>Code-Aid is a local-first Bug Reproduction Engineer for Python projects. It preserves the difference between what was observed, what static analysis found, what the engine thinks might be happening, and what a test actually proved.</p>
+             <p>Code-Aid is a local-first Bug Reproduction Engineer. It detects supported source languages, runs native syntax or compiler checks when the toolchain is present, and preserves the difference between what was observed, what static analysis found, what the engine thinks might be happening, and what a test actually proved.</p>
             <div className="docs-callout"><strong>Core promise</strong><span>Analysis is useful without an external model. Execution is never silently moved into the API process.</span></div>
           </DocSection>
 
@@ -52,7 +52,7 @@ npm run dev`}</pre>
           </DocSection>
 
           <DocSection id="architecture" title="Architecture">
-            <p>The repository uses a deliberately small split between a FastAPI service and a Vite-built React interface.</p>
+             <p>The repository uses a deliberately small split between a FastAPI service and a Vite-built React interface. Language adapters sit behind a shared registry so toolchain availability is reported instead of guessed.</p>
             <div className="architecture-diagram">
               <div><span>React / Vite</span><small>forms · workspace · reports</small></div><b>↕ JSON / multipart</b>
               <div><span>FastAPI</span><small>validation · routes · CORS</small></div><b>↕</b>
@@ -66,9 +66,9 @@ npm run dev`}</pre>
             <ol className="docs-steps">
               <li><strong>Ingestion.</strong> ZIP members are checked for absolute names, traversal, symlinks, member count, and byte budgets. Source is copied as data; no project module is imported.</li>
               <li><strong>Traceback parsing.</strong> Common Python exception families and frames are extracted from complete or pytest-prefixed traces. Malformed input returns a validation error.</li>
-              <li><strong>Static analysis.</strong> Python AST parsing matches deterministic rules, including unresolved names, local function argument mismatches, unsafe mapping lookup, attribute access, numeric conversion, mixed literal operations, inconsistent returns, and broad exception handling.</li>
+               <li><strong>Static analysis.</strong> Python AST parsing matches deterministic rules, including unresolved names, local function argument mismatches, unsafe mapping lookup, attribute access, numeric conversion, mixed literal operations, inconsistent returns, and broad exception handling. Other adapters normalize native compiler/parser diagnostics.</li>
               <li><strong>Hypotheses.</strong> Findings and the exception family are ranked with stable rules. A score is a confidence signal, not a diagnosis.</li>
-              <li><strong>Test generation.</strong> Bundled metadata can provide a module, function, args, and expected output. The generated pytest source is parsed and structurally checked.</li>
+               <li><strong>Test generation.</strong> Bundled Python metadata can provide a module, function, args, and expected output. The generated pytest source is parsed and structurally checked. Non-Python projects are not given a misleading Python test; their matrix entry says when generation is not configured.</li>
               <li><strong>Execution.</strong> Only Docker is eligible. The runner uses no network, no privileged flag, bounded CPU/memory/PIDs, read-only project mounts, and a timeout. Missing Docker returns <code>unavailable</code>.</li>
               <li><strong>Verification.</strong> Proposed complete file contents are checked for safe relative paths, size, Python syntax, and a unified diff. When Docker is available, baseline and staged-patch test runs are compared without mutating the stored project.</li>
             </ol>
@@ -84,8 +84,9 @@ npm run dev`}</pre>
           </DocSection>
 
           <DocSection id="limitations" title="Known limitations">
-            <ul className="docs-list">
-              <li>Python is the only analyzed language in this release.</li>
+             <ul className="docs-list">
+               <li>Analysis adapters cover Python, JavaScript, TypeScript, Java, C, C++, Go, and Rust. Native analysis is marked unavailable when the required compiler or parser is not installed.</li>
+               <li>Python is the only language with the current deterministic AST rule set and pytest generation flow.</li>
               <li>Generated tests need enough sample metadata to call a known function. Otherwise they are clearly marked as skipped templates.</li>
               <li>Docker is not bundled with the application. Without a daemon, tests cannot execute and the UI records that fact.</li>
               <li>Patch verification is limited to the generated tests; it does not run a full project suite or guarantee that untested regressions are absent.</li>

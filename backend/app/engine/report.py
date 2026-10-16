@@ -58,6 +58,24 @@ def generate_markdown_report(investigation: Mapping[str, Any]) -> str:
     else:
         lines.append("_No facts were recorded._")
 
+    language_analysis = _value(results, "language_analysis", {}) or {}
+    detected_languages = _value(language_analysis, "detected_languages", []) or _value(results, "detected_languages", []) or []
+    diagnostics = _value(results, "language_diagnostics", []) or _value(results, "diagnostics", []) or []
+    lines.extend(["", "## Language analysis", ""])
+    lines.append("- **Detected languages:** {}".format(", ".join("`{}`".format(_clean(item)) for item in detected_languages) or "none"))
+    if diagnostics:
+        for diagnostic in diagnostics:
+            location = _clean(_value(diagnostic, "path", "unknown file"))
+            line = _value(diagnostic, "line", None)
+            if line:
+                location += ":{}".format(line)
+            tool = _clean(_value(diagnostic, "tool", "adapter"))
+            severity = _clean(_value(diagnostic, "severity", "info"))
+            message = _clean(_value(diagnostic, "message", ""))
+            lines.append("- **{}** `{}` via `{}` — {}".format(severity, location, tool, message))
+    else:
+        lines.append("_No native parser/compiler diagnostics were emitted._")
+
     lines.extend(["", "## Findings", ""])
     findings = _value(results, "findings", []) or []
     if findings:

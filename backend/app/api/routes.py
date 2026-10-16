@@ -23,6 +23,7 @@ from ..engine.ingestion import (
     ingestion_limits_from_settings,
     ingest_zip,
 )
+from ..engine.language_analysis import analyze_project_languages, language_support_matrix
 from ..engine.patch_verifier import PatchVerificationError, verify_patch
 from ..engine.ranking import rank_hypotheses
 from ..engine.report import generate_markdown_report
@@ -108,8 +109,8 @@ def _summary_record(record: Mapping[str, Any]) -> Dict[str, Any]:
         "sample_id": record.get("sample_id"),
         "created_at": record["created_at"],
         "updated_at": record["updated_at"],
-        "finding_count": len(results.get("findings") or []),
-        "hypothesis_count": len(results.get("hypotheses") or []),
+        "finding_count": int(record.get("finding_count", len(results.get("findings") or []))),
+        "hypothesis_count": int(record.get("hypothesis_count", len(results.get("hypotheses") or []))),
     }
 
 
@@ -198,6 +199,16 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
             "database": "sqlite",
         }
 
+    @router.get("/languages", tags=["system"])
+    async def list_languages() -> List[Dict[str, Any]]:
+        """Return the support matrix and live native-tool availability."""
+
+        return language_support_matrix()
+
+    @router.get("/language-support", tags=["system"])
+    async def list_language_support() -> List[Dict[str, Any]]:
+        return language_support_matrix()
+
     @router.get("/samples", response_model=List[SampleSummary], tags=["samples"])
     async def list_samples() -> List[Dict[str, Any]]:
         return catalog.list()
@@ -268,10 +279,35 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
                 metadata=project.metadata,
                 max_source_file_bytes=settings.max_source_file_bytes,
             )
-            hypotheses = rank_hypotheses(traceback_info, analysis.findings, project.metadata)
-            generated_tests = validate_generated_tests(
-                generate_tests(traceback_info, project.metadata, analysis.findings)
+            language_analysis = analyze_project_languages(
+                project.root,
+                max_source_file_bytes=settings.max_source_file_bytes,
             )
+            hypotheses = rank_hypotheses(traceback_info, analysis.findings, project.metadata)
+            # The existing deterministic generator is intentionally Python/
+            # pytest-specific. Do not put a Python test into a JavaScript,
+            # Java, or compiler project and call that multi-language support.
+            # Those projects still receive native syntax/diagnostic analysis;
+            # test generation remains an explicit, visible capability gap.
+            primary_language = (
+                "python"
+                if "python" in language_analysis.detected_languages
+                else (language_analysis.detected_languages[0] if language_analysis.detected_languages else None)
+            )
+            generated_tests = (
+                validate_generated_tests(
+                    generate_tests(traceback_info, project.metadata, analysis.findings)
+                )
+                if primary_language == "python"
+                else []
+            )
+            if not generated_tests and primary_language:
+                analysis.facts.append(
+                    {
+                        "text": "No language-native test generator is configured for {} yet; analysis remains available without execution claims.".format(primary_language),
+                        "evidence": [],
+                    }
+                )
             results = {
                 "facts": analysis.facts,
                 "findings": analysis.findings,
@@ -279,6 +315,11 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
                 "generated_tests": generated_tests,
                 "execution_results": [],
                 "verification": {"status": "not-run", "safe_to_apply": False, "checks": []},
+                "language": language_analysis.detected_languages[0] if language_analysis.detected_languages else None,
+                "detected_languages": language_analysis.detected_languages,
+                "diagnostics": language_analysis.diagnostics,
+                "language_diagnostics": language_analysis.diagnostics,
+                "language_analysis": language_analysis.to_dict(),
             }
             source = {
                 "source_type": project.source_type,
@@ -299,6 +340,8 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
                     )
                     if (value := _first_text(fields, key)) is not None and value.strip()
                 },
+                "language": language_analysis.detected_languages[0] if language_analysis.detected_languages else None,
+                "detected_languages": language_analysis.detected_languages,
             }
             record = repository.create(
                 investigation_id,

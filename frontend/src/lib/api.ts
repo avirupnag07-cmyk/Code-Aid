@@ -3,6 +3,7 @@ import type {
   ExecutionResult,
   Investigation,
   InvestigationSummary,
+  LanguagesResponse,
   Sample,
   VerificationResult,
 } from './types'
@@ -29,6 +30,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<{ status: string; service: string; version: string; database: string }>('/health'),
+  languages: () => request<LanguagesResponse>('/languages'),
   samples: () => request<Sample[]>('/samples'),
   investigations: () => request<InvestigationSummary[]>('/investigations'),
   investigation: (id: string) => request<Investigation>(`/investigations/${encodeURIComponent(id)}`),

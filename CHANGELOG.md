@@ -2,6 +2,22 @@
 
 All notable changes to Code-Aid are recorded here.
 
+## [Unreleased] - 2026-10-16
+
+### Added
+
+- Shared language adapter registry with live `/api/languages` support matrix.
+- Bounded native syntax/compiler diagnostics for Python, JavaScript,
+  TypeScript, Java, C, C++, Go, and Rust when their toolchains are installed.
+- Language-adapter fixtures and explicit non-Python test-generation gaps.
+- Native diagnostic display in the source evidence workspace.
+- Security model documentation.
+
+### Changed
+
+- Landing page, docs, and workspace copy now distinguish analysis availability
+  from language-native test generation and execution.
+
 ## [0.1.0] - 2026-10-15
 
 ### Added
