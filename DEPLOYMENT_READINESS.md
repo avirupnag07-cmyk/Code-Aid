@@ -1,7 +1,7 @@
 # Code-Aid deployment readiness
 
-Status: **local preview ready; external publication and deployment not
-approved or performed**.
+Status: **published to GitHub; deployment blocked pending compatible hosting
+configuration**.
 
 ## Verified locally
 
@@ -70,7 +70,21 @@ unavailable in that deployment.
 - Docker image build, Compose startup, and isolated execution are blocked until
   Docker is installed and a daemon is available.
 
-## Publication gate
+## Publication and deployment status
 
-No GitHub push, package publication, or deployment was performed. Those actions
-require explicit user approval after review of the working preview.
+The approved commits were pushed to:
+
+```text
+https://github.com/avirupnag07-cmyk/Code-Aid.git
+```
+
+Published `main` commit:
+
+```text
+af4a052bb8b0b5a063f98eacf56cabd699b5fc8c
+```
+
+No deployment URL exists yet. Deployment is blocked because this environment
+has no Docker daemon, hosting-provider CLI, provider configuration, or supplied
+hosting credentials. A static-only host would not be compatible with Git
+imports, SQLite persistence, or isolated execution.
