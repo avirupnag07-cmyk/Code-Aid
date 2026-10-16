@@ -126,6 +126,19 @@ class SourceFile(Model):
     size: int = 0
 
 
+class RepositoryMetadata(Model):
+    """Provider-neutral, token-free identity of an imported repository."""
+
+    provider: str
+    url: str
+    owner: str
+    name: str
+    ref: str
+    sha: str
+    subdirectory: Optional[str] = None
+    imported_at: str
+
+
 class SourceInfo(Model):
     source_type: str
     sample_id: Optional[str] = None
@@ -137,6 +150,7 @@ class SourceInfo(Model):
     files: List[SourceFile] = Field(default_factory=list)
     language: Optional[str] = None
     detected_languages: List[str] = Field(default_factory=list)
+    repository: Optional[RepositoryMetadata] = None
 
 
 class InvestigationSummary(Model):

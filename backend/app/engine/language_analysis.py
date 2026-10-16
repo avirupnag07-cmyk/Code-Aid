@@ -79,7 +79,23 @@ class LanguageAnalysis:
 def _toolchain(command: str) -> Toolchain:
     path = shutil.which(command)
     if path:
-        return Toolchain(command, path, True, "detected at {}".format(path))
+        # PATH can contain wrappers or stale shims.  Confirm that the selected
+        # executable can answer a harmless version probe before advertising a
+        # native diagnostic tool as available.
+        try:
+            probe = subprocess.run(
+                (path, "--version"),
+                capture_output=True,
+                text=True,
+                timeout=2.0,
+                check=False,
+                start_new_session=True,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return Toolchain(command, None, False, "{} is not runnable: {}".format(command, exc))
+        if probe.returncode == 0:
+            return Toolchain(command, path, True, "detected at {}".format(path))
+        return Toolchain(command, None, False, "{} is not runnable from {}".format(command, path))
     return Toolchain(command, None, False, "{} is not installed or not on PATH".format(command))
 
 
@@ -174,7 +190,10 @@ def normalize_diagnostics(
             message = line_text
         lowered = message.lower()
         severity = "warning" if "warning" in lowered else "info" if "note" in lowered else "error"
-        code_match = re.search(r"\b(?:TS\d+|[A-Za-z]+\.(?:err|warn)\.[A-Za-z0-9_.-]+)\b", message)
+        code_match = re.search(
+            r"\b(?:TS\d+|[A-Z]\d{4}|[A-Za-z]+\.(?:err|warn)\.[A-Za-z0-9_.-]+)\b",
+            message,
+        )
         code = code_match.group(0) if code_match else ""
         # Rust emits a separate "error[...]" line and a location arrow.  Keep
         # the normalized message while allowing the next line to supply a
@@ -189,6 +208,8 @@ def normalize_diagnostics(
         elif pending_location and line_number is None:
             # Node prints the offending source line between its location and
             # the actual SyntaxError; it is context, not a second diagnostic.
+            continue
+        if re.match(r"^\d+\s+(?:errors?|warnings?)\.?$", line_text):
             continue
         diagnostics.append(
             _diagnostic(
@@ -321,7 +342,7 @@ class NativeAdapter(LanguageAdapter):
     def analyze_file(self, root: Path, path: Path, timeout_seconds: float) -> List[Dict[str, Any]]:
         relative = _relative(root, path)
         stdout, stderr, returncode, status = _run_check(
-            (*self.command_prefix, str(path)), root, timeout_seconds
+            (*self.command_prefix, str(path.resolve())), root, timeout_seconds
         )
         output = "\n".join(part for part in (stderr, stdout) if part)
         if status == "timeout":

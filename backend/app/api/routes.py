@@ -9,10 +9,11 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
 from starlette.datastructures import UploadFile
 
 from .. import __version__
+from ..auth.github import GitHubOAuth
 from ..config import Settings
 from ..db import InvestigationRepository
 from ..engine.analyzer import analyze_project
@@ -23,6 +24,7 @@ from ..engine.ingestion import (
     ingestion_limits_from_settings,
     ingest_zip,
 )
+from ..engine.git_import import GitImportError, import_repository
 from ..engine.language_analysis import analyze_project_languages, language_support_matrix
 from ..engine.patch_verifier import PatchVerificationError, verify_patch
 from ..engine.ranking import rank_hypotheses
@@ -166,6 +168,26 @@ def _request_error(message: str, status_code: int = 400) -> HTTPException:
     return HTTPException(status_code=status_code, detail=message)
 
 
+def _git_request_error(error: Exception) -> HTTPException:
+    """Map sanitized importer failures to actionable HTTP classes."""
+
+    message = str(error)
+    lowered = message.lower()
+    if any(term in lowered for term in ("url", "ref", "subdirectory", "host", "credentials")):
+        status = 422
+    elif "exceeds" in lowered or "too many files" in lowered or "size limit" in lowered:
+        status = 413
+    elif "timed out" in lowered:
+        status = 504
+    elif "not available" in lowered:
+        status = 503
+    elif "could not be fetched" in lowered or "could not be resolved" in lowered:
+        status = 502
+    else:
+        status = 400
+    return _request_error(message, status)
+
+
 def _file_inventory(root: Path, relative_paths: Iterable[str]) -> List[Dict[str, Any]]:
     items: List[Dict[str, Any]] = []
     for relative in sorted(set(relative_paths)):
@@ -187,8 +209,35 @@ def _file_inventory(root: Path, relative_paths: Iterable[str]) -> List[Dict[str,
     return items
 
 
+def _repository_fields(fields: Mapping[str, Any]) -> Optional[Dict[str, Optional[str]]]:
+    """Accept JSON ``repository`` and flat form fields without broadening the API."""
+
+    nested = fields.get("repository")
+    if isinstance(nested, str):
+        try:
+            nested = json.loads(nested)
+        except (TypeError, ValueError) as exc:
+            raise _request_error("repository must be a JSON object", 422) from exc
+    if nested is not None and not isinstance(nested, Mapping):
+        raise _request_error("repository must be an object", 422)
+    source = nested if isinstance(nested, Mapping) else fields
+    url = _first_text(source, "url", "repository_url", "git_url", "repo_url")
+    flat_url = _first_text(fields, "repository_url", "git_url", "repo_url")
+    url = url or flat_url
+    ref = _first_text(source, "ref", "branch", "tag", "commit")
+    ref = ref or _first_text(fields, "ref", "branch", "tag", "commit")
+    subdirectory = _first_text(source, "subdirectory", "path")
+    subdirectory = subdirectory or _first_text(fields, "subdirectory", "repository_subdirectory")
+    if url is None and ref is None and subdirectory is None:
+        return None
+    if url is None or ref is None:
+        raise _request_error("repository requires url and ref", 422)
+    return {"url": url, "ref": ref, "subdirectory": subdirectory}
+
+
 def create_router(settings: Settings, repository: InvestigationRepository, catalog: SampleCatalog) -> APIRouter:
     router = APIRouter()
+    github_oauth = GitHubOAuth(settings)
 
     @router.get("/health", response_model=HealthResponse, tags=["system"])
     async def health() -> Dict[str, str]:
@@ -220,6 +269,56 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
         except IngestionError as exc:
             raise _request_error(str(exc), 404)
 
+    @router.get("/github/status", tags=["authentication"])
+    @router.get("/github/oauth/status", tags=["authentication"])
+    @router.get("/auth/github/status", tags=["authentication"])
+    async def github_status(request: Request) -> Dict[str, object]:
+        return github_oauth.status(request)
+
+    @router.get("/github/authorize", tags=["authentication"])
+    @router.get("/github/start", tags=["authentication"])
+    @router.get("/github/oauth/start", tags=["authentication"])
+    @router.get("/auth/github/start", tags=["authentication"])
+    async def github_authorize() -> RedirectResponse:
+        return github_oauth.start()
+
+    @router.get("/github/callback", tags=["authentication"])
+    @router.get("/github/oauth/callback", tags=["authentication"])
+    @router.get("/auth/github/callback", tags=["authentication"])
+    async def github_callback(request: Request, code: Optional[str] = None, state: Optional[str] = None) -> JSONResponse:
+        result = github_oauth.callback(request, code, state)
+        response = JSONResponse(result)
+        response.set_cookie(
+            "code_aid_github_session",
+            str(getattr(request.state, "github_session_cookie", "")),
+            httponly=True,
+            secure=github_oauth._secure_cookie(),
+            samesite="lax",
+            max_age=600,
+            path="/",
+        )
+        response.delete_cookie("code_aid_github_state", path="/")
+        response.delete_cookie("code_aid_github_pkce", path="/")
+        return response
+
+    @router.post("/github/disconnect", tags=["authentication"])
+    @router.post("/github/oauth/disconnect", tags=["authentication"])
+    @router.post("/auth/github/disconnect", tags=["authentication"])
+    async def github_disconnect(request: Request) -> JSONResponse:
+        response = JSONResponse(github_oauth.disconnect(request))
+        response.delete_cookie("code_aid_github_session", path="/")
+        return response
+
+    @router.get("/github/repositories", tags=["authentication"])
+    @router.get("/auth/github/repositories", tags=["authentication"])
+    async def github_repositories(request: Request) -> List[Dict[str, object]]:
+        return github_oauth.repositories(request)
+
+    @router.get("/github/repositories/{owner}/{name}/refs", tags=["authentication"])
+    @router.get("/auth/github/repositories/{owner}/{name}/refs", tags=["authentication"])
+    async def github_repository_refs(request: Request, owner: str, name: str) -> Dict[str, object]:
+        return github_oauth.repository_refs(request, owner, name)
+
     @router.get("/investigations", response_model=List[InvestigationSummary], tags=["investigations"])
     async def list_investigations(
         limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0)
@@ -234,8 +333,11 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
             sample_id = sample_id.strip()
         if sample_id and archive is not None:
             raise _request_error("Choose either sample_id or a ZIP upload, not both")
-        if not sample_id and archive is None:
-            raise _request_error("A safe sample_id or ZIP upload is required", 422)
+        repository_request = _repository_fields(fields)
+        if sum(bool(item) for item in (sample_id, archive is not None, repository_request is not None)) > 1:
+            raise _request_error("Choose either sample_id, a ZIP upload, or a repository import, not multiple sources")
+        if not sample_id and archive is None and repository_request is None:
+            raise _request_error("A safe sample_id, ZIP upload, or public HTTPS repository is required", 422)
         title = (_first_text(fields, "title", "name") or "").strip()
         if len(title) > 120:
             raise _request_error("title must be at most 120 characters", 422)
@@ -251,7 +353,7 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
                     raise _request_error(str(exc), 404)
                 if not title:
                     title = str(project.metadata.get("name") or sample_id)
-            else:
+            elif archive is not None:
                 try:
                     project = ingest_zip(
                         archive or b"",
@@ -263,6 +365,25 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
                     raise _request_error(str(exc), 400)
                 if not title:
                     title = Path(original_filename or "uploaded-project.zip").stem or "Uploaded project"
+            else:
+                try:
+                    project = import_repository(
+                        str(repository_request["url"]),
+                        str(repository_request["ref"]),
+                        project_root,
+                        subdirectory=repository_request.get("subdirectory"),
+                        limits=ingestion_limits_from_settings(settings),
+                        timeout_seconds=settings.git_timeout_seconds,
+                        auth_token=github_oauth.token_for_request(request),
+                    )
+                except (GitImportError, IngestionError) as exc:
+                    raise _git_request_error(exc)
+                if not title:
+                    title = "{}/{}@{}".format(
+                        project.repository.get("owner", "repository") if project.repository else "repository",
+                        project.repository.get("name", "project") if project.repository else "project",
+                        project.repository.get("ref", "selected") if project.repository else "selected",
+                    )
             if traceback_override is not None:
                 if len(traceback_override) > settings.max_traceback_chars:
                     raise _request_error("traceback exceeds the configured size limit", 413)
@@ -321,13 +442,15 @@ def create_router(settings: Settings, repository: InvestigationRepository, catal
                 "language_diagnostics": language_analysis.diagnostics,
                 "language_analysis": language_analysis.to_dict(),
             }
+            source_metadata = dict(project.metadata)
             source = {
                 "source_type": project.source_type,
                 "sample_id": project.sample_id,
                 "original_filename": project.original_filename,
                 "file_count": project.file_count,
                 "traceback": project.traceback,
-                "metadata": project.metadata,
+                "metadata": source_metadata,
+                "repository": project.repository,
                 "files": _file_inventory(project.root, project.files),
                 "intake": {
                     key: value

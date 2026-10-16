@@ -64,6 +64,34 @@ def test_normalization_produces_one_stable_diagnostic_shape():
     ]
 
 
+def test_normalization_keeps_rust_code_location_and_drops_summary():
+    diagnostics = language.normalize_diagnostics(
+        "rust",
+        "error[E0308]: mismatched types\n"
+        "  --> broken.rs:1:23\n"
+        "   |\n"
+        "1  | fn answer() -> i32 { }\n"
+        "   |                       - expected i32, found ()\n"
+        "\n"
+        "1 error\n",
+        "broken.rs",
+        "rustc",
+    )
+    assert diagnostics == [
+        {
+            "language": "rust",
+            "path": "broken.rs",
+            "line": 1,
+            "column": 23,
+            "severity": "error",
+            "message": "error[E0308]: mismatched types",
+            "tool": "rustc",
+            "code": "E0308",
+            "source": "adapter",
+        }
+    ]
+
+
 def test_unavailable_toolchain_is_explicit(tmp_path, monkeypatch):
     source = tmp_path / "broken.js"
     source.write_text("const = ;\n")

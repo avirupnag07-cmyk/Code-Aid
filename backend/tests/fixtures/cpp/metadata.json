@@ -1,0 +1,9 @@
+{
+  "name": "C++ missing return value",
+  "description": "A deterministic C++ source fixture with a compiler diagnostic.",
+  "category": "diagnostic-fixture",
+  "language": "cpp",
+  "entry_file": "broken.cpp",
+  "defect": "non-void function returns without a value on line 1",
+  "expected_diagnostic": {"path": "broken.cpp", "line": 1, "severity": "error", "tool": "g++"}
+}

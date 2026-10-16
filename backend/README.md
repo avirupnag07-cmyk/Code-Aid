@@ -57,6 +57,8 @@ serves `/docs` and `/openapi.json`).
 | `GET` | `/api/health` | Returns service/version/database health. |
 | `GET` | `/api/languages` | Returns the live language adapter/toolchain matrix. |
 | `GET` | `/api/language-support` | Compatibility alias for the language matrix. |
+| `GET` | `/api/github/status` | Returns GitHub OAuth configuration/session status without tokens. |
+| `GET` | `/api/github/repositories` | Lists repositories for the connected GitHub session. |
 | `GET` | `/api/samples` | Lists safe bundled sample choices and their metadata/traceback. |
 | `GET` | `/api/samples/{sample_id}` | Returns one sample descriptor. |
 
@@ -65,7 +67,7 @@ serves `/docs` and `/openapi.json`).
 | Method | Route | Body / result |
 | --- | --- | --- |
 | `GET` | `/api/investigations?limit=100&offset=0` | Lists persisted summaries. |
-| `POST` | `/api/investigations` | Accepts JSON or multipart. Choose exactly one `sample_id` (or `sample`) **or** a `.zip` file field named `archive`, `file`, `zip_file`, or `project`; optional `title`/`name` and `traceback`/`traceback_text` are accepted. JSON may carry the ZIP as `archive_base64` plus optional `filename`. |
+| `POST` | `/api/investigations` | Accepts JSON or multipart. Choose exactly one sample, ZIP, or repository URL/ref. Public Git uses allowlisted HTTPS providers; configured GitHub OAuth sessions can import private GitHub repositories. |
 | `GET` | `/api/investigations/{id}` | Returns the full persisted investigation. |
 | `DELETE` | `/api/investigations/{id}` | Deletes the record and its private ingested project directory. |
 | `POST` | `/api/investigations/{id}/run-tests` | Optional JSON `{ "timeout_seconds": 20 }`; executes generated tests only in Docker and appends an execution result. |

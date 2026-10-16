@@ -1,0 +1,9 @@
+{
+  "name": "Rust missing return value",
+  "description": "A deterministic Rust source fixture with a compiler diagnostic.",
+  "category": "diagnostic-fixture",
+  "language": "rust",
+  "entry_file": "broken.rs",
+  "defect": "function declared to return i32 has an empty body",
+  "expected_diagnostic": {"path": "broken.rs", "line": 1, "severity": "error", "tool": "cargo/rustc"}
+}

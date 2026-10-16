@@ -1,0 +1,9 @@
+{
+  "name": "JavaScript missing initializer",
+  "description": "A deterministic JavaScript source fixture with a syntax error.",
+  "category": "diagnostic-fixture",
+  "language": "javascript",
+  "entry_file": "broken.js",
+  "defect": "missing initializer expression on line 1",
+  "expected_diagnostic": {"path": "broken.js", "line": 1, "severity": "error", "tool": "node"}
+}

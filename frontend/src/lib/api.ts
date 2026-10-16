@@ -4,6 +4,8 @@ import type {
   Investigation,
   InvestigationSummary,
   LanguagesResponse,
+  GitHubRepository,
+  GitHubStatus,
   Sample,
   VerificationResult,
 } from './types'
@@ -13,6 +15,7 @@ const API_PREFIX = import.meta.env.VITE_API_URL || '/api'
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_PREFIX}${path}`, {
     headers: { Accept: 'application/json', ...(init?.headers || {}) },
+    credentials: 'include',
     ...init,
   })
   if (!response.ok) {
@@ -46,6 +49,9 @@ export const api = {
     if (input.environment.trim()) body.append('environment', input.environment.trim())
     if (input.sampleId) body.append('sample_id', input.sampleId)
     if (input.archive) body.append('archive', input.archive)
+    if (input.repositoryUrl?.trim()) body.append('repository_url', input.repositoryUrl.trim())
+    if (input.repositoryRef?.trim()) body.append('ref', input.repositoryRef.trim())
+    if (input.repositorySubdirectory?.trim()) body.append('subdirectory', input.repositorySubdirectory.trim())
     return request<Investigation>('/investigations', { method: 'POST', body })
   },
   runTests: (id: string, timeoutSeconds?: number) => request<Investigation & { execution_result: ExecutionResult }>(`/investigations/${encodeURIComponent(id)}/run-tests`, {
@@ -59,6 +65,10 @@ export const api = {
     body: JSON.stringify({ file_path: filePath, content }),
   }),
   reportUrl: (id: string) => `${API_PREFIX}/investigations/${encodeURIComponent(id)}/report`,
+  githubStatus: () => request<GitHubStatus>('/github/status'),
+  githubRepositories: () => request<GitHubRepository[]>('/github/repositories'),
+  githubDisconnect: () => request<GitHubStatus>('/github/disconnect', { method: 'POST' }),
+  githubAuthorizeUrl: () => `${API_PREFIX}/github/authorize`,
 }
 
 export function formatDate(value: string): string {

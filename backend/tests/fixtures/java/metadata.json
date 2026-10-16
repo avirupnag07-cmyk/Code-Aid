@@ -1,0 +1,9 @@
+{
+  "name": "Java missing return value",
+  "description": "A deterministic Java source fixture with a compiler error.",
+  "category": "diagnostic-fixture",
+  "language": "java",
+  "entry_file": "Broken.java",
+  "defect": "non-void method returns without a value on line 2",
+  "expected_diagnostic": {"path": "Broken.java", "line": 2, "severity": "error", "tool": "javac"}
+}

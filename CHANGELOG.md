@@ -6,6 +6,10 @@ All notable changes to Code-Aid are recorded here.
 
 ### Added
 
+- Read-only public Git import with exact revision metadata and optional
+  read-only GitHub OAuth repository access.
+- Deliberately broken per-language fixtures and native diagnostic validation
+  tests.
 - Shared language adapter registry with live `/api/languages` support matrix.
 - Bounded native syntax/compiler diagnostics for Python, JavaScript,
   TypeScript, Java, C, C++, Go, and Rust when their toolchains are installed.

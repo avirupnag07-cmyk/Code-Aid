@@ -1,5 +1,8 @@
 import io
 import zipfile
+from pathlib import Path
+
+from app.engine.ingestion import IngestedProject
 
 
 def test_health_and_sample_catalog_are_available(client):
@@ -113,6 +116,45 @@ def test_multipart_sample_creation_accepts_form_fields(client):
     )
     assert created.status_code == 201
     assert created.json()["source"]["sample_id"] == "unexpected-type-bug"
+
+
+def test_repository_creation_uses_importer_and_persists_token_free_revision_metadata(client, monkeypatch, tmp_path: Path):
+    def fake_import(url, ref, destination, **kwargs):
+        destination.mkdir(parents=True)
+        (destination / "app.py").write_text("raise RuntimeError('mock repository')")
+        (destination / "traceback.txt").write_text("RuntimeError: mock repository")
+        return IngestedProject(
+            root=destination,
+            source_type="git",
+            traceback="RuntimeError: mock repository",
+            files=["app.py", "traceback.txt"],
+            metadata={},
+            repository={
+                "provider": "github",
+                "url": url,
+                "owner": "acme",
+                "name": "project",
+                "ref": ref,
+                "sha": "0123456789abcdef0123456789abcdef01234567",
+                "subdirectory": None,
+                "imported_at": "2026-01-01T00:00:00+00:00",
+            },
+        )
+
+    monkeypatch.setattr("app.api.routes.import_repository", fake_import)
+    created = client.post(
+        "/api/investigations",
+        json={
+            "repository": {"url": "https://github.com/acme/project.git", "ref": "main"},
+            "title": "Mock repository investigation",
+        },
+    )
+    assert created.status_code == 201
+    source = created.json()["source"]
+    assert source["source_type"] == "git"
+    assert source["repository"]["sha"] == "0123456789abcdef0123456789abcdef01234567"
+    assert "repository" not in source["metadata"]
+    assert "token" not in source["metadata"]
 
 
 def test_patch_verification_is_non_mutating_and_rejects_escape(client):

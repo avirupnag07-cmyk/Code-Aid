@@ -1,0 +1,9 @@
+{
+  "name": "C missing return value",
+  "description": "A deterministic C source fixture with a compiler diagnostic.",
+  "category": "diagnostic-fixture",
+  "language": "c",
+  "entry_file": "broken.c",
+  "defect": "non-void function returns without a value on line 1",
+  "expected_diagnostic": {"path": "broken.c", "line": 1, "severity": "error", "tool": "gcc"}
+}

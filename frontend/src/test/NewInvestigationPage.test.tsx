@@ -17,8 +17,9 @@ const sample = {
 
 describe('new investigation workflow', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn()
+      vi.stubGlobal('fetch', vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => [sample] })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ provider: 'github', configured: false, connected: false, message: 'not configured' }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'new-record' }) }))
   })
 
@@ -29,6 +30,6 @@ describe('new investigation workflow', () => {
     await user.type(screen.getByPlaceholderText(/e\.g\. checkout tax calculation/i), 'Sample investigation')
     await user.click(screen.getByRole('button', { name: /analyze investigation/i }))
     expect(await screen.findByText('analysis record opened')).toBeInTheDocument()
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3)
   })
 })

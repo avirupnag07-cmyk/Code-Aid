@@ -61,6 +61,7 @@ class IngestedProject:
     traceback: str = ""
     metadata: Dict[str, object] = field(default_factory=dict)
     files: List[str] = field(default_factory=list)
+    repository: Optional[Dict[str, object]] = None
 
     @property
     def file_count(self) -> int:
@@ -163,6 +164,7 @@ def _copy_tree_safely(source: Path, destination: Path, limits: IngestionLimits) 
     destination.mkdir(parents=True, exist_ok=False)
     try:
         files: List[str] = []
+        total_bytes = 0
         for source_path in sorted(source.rglob("*"), key=lambda item: item.as_posix()):
             relative = source_path.relative_to(source)
             if any(part in IGNORED_DIRECTORIES for part in relative.parts):
@@ -179,6 +181,11 @@ def _copy_tree_safely(source: Path, destination: Path, limits: IngestionLimits) 
             size = source_path.stat().st_size
             if size > limits.max_source_file_bytes:
                 raise ArchiveLimitError("source file exceeds the configured size limit")
+            if len(files) >= limits.max_members:
+                raise ArchiveLimitError("project contains too many files")
+            total_bytes += size
+            if total_bytes > limits.max_uncompressed_bytes:
+                raise ArchiveLimitError("project exceeds the configured total source size limit")
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(str(source_path), str(target))
             files.append(relative.as_posix())

@@ -1,0 +1,1 @@
+RuntimeError: native C compiler rejected broken.c

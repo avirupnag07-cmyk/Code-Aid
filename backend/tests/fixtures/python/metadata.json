@@ -1,0 +1,9 @@
+{
+  "name": "Python incomplete expression",
+  "description": "A deterministic Python source fixture with an incomplete expression.",
+  "category": "diagnostic-fixture",
+  "language": "python",
+  "entry_file": "broken.py",
+  "defect": "incomplete expression on line 2",
+  "expected_diagnostic": {"path": "broken.py", "line": 2, "severity": "error", "tool": "ast"}
+}

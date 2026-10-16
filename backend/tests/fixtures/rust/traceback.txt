@@ -1,0 +1,1 @@
+RuntimeError: native Rust compiler rejected broken.rs

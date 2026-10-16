@@ -1,0 +1,9 @@
+{
+  "name": "Go missing return value",
+  "description": "A deterministic Go source fixture with a compiler diagnostic.",
+  "category": "diagnostic-fixture",
+  "language": "go",
+  "entry_file": "broken.go",
+  "defect": "function declared to return int has no return value",
+  "expected_diagnostic": {"path": "broken.go", "line": 3, "severity": "error", "tool": "go"}
+}

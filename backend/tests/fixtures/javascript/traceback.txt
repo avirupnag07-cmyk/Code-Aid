@@ -1,0 +1,1 @@
+RuntimeError: native JavaScript parser rejected broken.js

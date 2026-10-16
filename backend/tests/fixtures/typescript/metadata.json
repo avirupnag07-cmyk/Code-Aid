@@ -1,0 +1,9 @@
+{
+  "name": "TypeScript incomplete initializer",
+  "description": "A deterministic TypeScript source fixture with a syntax error.",
+  "category": "diagnostic-fixture",
+  "language": "typescript",
+  "entry_file": "broken.ts",
+  "defect": "missing initializer expression on line 1",
+  "expected_diagnostic": {"path": "broken.ts", "line": 1, "severity": "error", "tool": "tsc"}
+}
