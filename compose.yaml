@@ -9,12 +9,10 @@ services:
       CODE_AID_DATABASE: /app/backend/data/code_aid.sqlite3
       CODE_AID_STORAGE: /app/backend/data/investigations
       CODE_AID_SAMPLES: /app/samples
-      CODE_AID_ALLOWED_ORIGINS: http://localhost:5173
+      CODE_AID_ALLOWED_ORIGINS: ${CODE_AID_ALLOWED_ORIGINS:-http://localhost:5173}
       CODE_AID_DOCKER_IMAGE: code-aid-runner:0.1.0
     volumes:
       - code_aid_data:/app/backend/data
-
-    extra_hosts:
 
     ports:
       - "8000:8000"

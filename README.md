@@ -284,6 +284,34 @@ VITE_API_URL=http://127.0.0.1:8000/api npm --prefix frontend run build
 The production container uses Nginx to serve the SPA and proxies `/api/` to the
 Compose backend service.
 
+#### Deploy the frontend to Vercel with a local API
+
+The root `vercel.json` installs the frontend with its existing
+`frontend/package-lock.json`, builds the Vite app, publishes `frontend/dist`,
+and rewrites client-side routes to `index.html`. When creating the Vercel
+project, add this environment variable before deploying:
+
+```text
+VITE_API_URL=http://localhost:8000/api
+```
+
+The deployed page will call the API on the same computer where the browser is
+running. Start the backend locally with `make run-backend`, then set the
+backend's allowed origin to the deployed Vercel origin (without a trailing
+slash), for example:
+
+```text
+CODE_AID_ALLOWED_ORIGINS=https://your-project.vercel.app
+```
+
+Set `CODE_AID_ALLOWED_ORIGINS` in the backend environment before starting the
+API. Do not commit local environment files or credentials.
+
+This setup is intentionally a local investigation mode: a Vercel deployment
+cannot reach `localhost:8000` from another person's computer. If judges or
+teammates need a shared demo, deploy the API behind an HTTPS origin and set
+`VITE_API_URL` to that API's `/api` URL instead.
+
 ### Database setup
 
 SQLite tables are created automatically at startup. No migration command is
@@ -562,6 +590,20 @@ the Compose `code_aid_data` volume only when you intend to discard local
 investigations.
 
 ### Docker instructions
+
+The root `Dockerfile` is the reproducible backend image for clean Linux
+machines. It pins Python 3.9.21, installs the locked backend dependencies, and
+starts Uvicorn as a non-root user:
+
+```bash
+make docker-build
+make docker-run
+```
+
+The image persists SQLite state in the named `code_aid_data` volume. It does
+not mount the host Docker socket, so Docker-only generated-test execution is
+reported as unavailable by design. The frontend is built and served separately
+by Vercel (or by the Compose service below).
 
 The root `compose.yaml` builds two services:
 
