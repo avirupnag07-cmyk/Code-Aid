@@ -4,7 +4,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     CODE_AID_DATABASE=backend/data/code_aid.sqlite3 \
     CODE_AID_STORAGE=backend/data/investigations \
-    CODE_AID_SAMPLES=samples
+    CODE_AID_SAMPLES=samples \
+    DOCKER_HOST=tcp://host.docker.internal:2375
 
 WORKDIR /app
 RUN apt-get update \
@@ -19,7 +20,7 @@ RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin codeaid \
     && mkdir -p /app/backend/data/investigations \
     && chown -R codeaid:codeaid /app
 WORKDIR /app/backend
-USER codeaid
+USER root
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/health', timeout=3)"
