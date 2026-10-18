@@ -11,9 +11,9 @@ services:
       CODE_AID_DOCKER_IMAGE: code-aid-runner:0.1.0
     volumes:
       - code_aid_data:/app/backend/data
-      - /var/run/docker.sock:/var/run/docker.sock
+
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+
     ports:
       - "8000:8000"
 
