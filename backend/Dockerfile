@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     CODE_AID_DATABASE=backend/data/code_aid.sqlite3 \
     CODE_AID_STORAGE=backend/data/investigations \
     CODE_AID_SAMPLES=samples \
-    DOCKER_HOST=unix:///var/run/docker.sock
+
 
 WORKDIR /app
 RUN apt-get update \
