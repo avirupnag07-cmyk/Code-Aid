@@ -1,16 +1,20 @@
 FROM python:3.9.21-slim-bookworm
+ARG BUILDTYPE=production
+ENV DOCKER_HOST=
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    CODE_AID_DATABASE=backend/data/code_aid.sqlite3 \
-    CODE_AID_STORAGE=backend/data/investigations \
-    CODE_AID_SAMPLES=samples \
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 CODE_AID_DATABASE=backend/data/code_aid.sqlite3 CODE_AID_STORAGE=backend/data/investigations CODE_AID_SAMPLES=samples
 
 
 WORKDIR /app
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y git ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+RUN if [ "$BUILDTYPE" = "dev" ]; then \
+        apt-get update && \
+        apt-get install --no-install-recommends -y git ca-certificates docker.io && \
+        rm -rf /var/lib/apt/lists/*; \
+    else \
+        apt-get update && \
+        apt-get install --no-install-recommends -y git ca-certificates && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
 COPY backend/requirements.lock /app/backend/requirements.lock
 RUN python -m pip install --no-cache-dir -r /app/backend/requirements.lock
 COPY backend /app/backend

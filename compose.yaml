@@ -1,6 +1,8 @@
 services:
   backend:
     build:
+      args:
+        BUILDTYPE: production
       context: .
       dockerfile: backend/Dockerfile
     environment:
