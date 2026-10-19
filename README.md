@@ -11,6 +11,11 @@ execution or patch check is recorded as evidence.
 
 ## Quick start
 
+**Judges on Linux:** follow [README.linux.md](README.linux.md) for a clean
+checkout, exact terminal commands (including a no-Make path), Docker startup,
+offline checks, and both failed/passed upload cases. No Vercel, Render, API key,
+or external database is required.
+
 ### Prerequisites
 
 - Python **3.9.21** (the backend runtime is pinned in `backend/.python-version`)
@@ -101,20 +106,42 @@ http://localhost:15173. Do not run host and Compose services on the same ports.
 
 ### Run a ZIP investigation
 
-The web workflow accepts project ZIP archives. The repository includes a
-deliberately broken upload fixture at
-`test-fixtures/broken-python-project.zip` for a safe smoke test:
+The web workflow accepts project ZIP archives. Two public fixtures use the
+same input and expected-output assertion (`100.0`, `"8"` → `108.0`):
+
+| ZIP | Expected generated-test result |
+| --- | --- |
+| [broken-python-project.zip](test-fixtures/broken-python-project.zip) | `failed`, one real calculator `TypeError`, pytest exit 1 |
+| [corrected-python-project.zip](test-fixtures/corrected-python-project.zip) | `passed`, one passing test, pytest exit 0 |
+
+Upload each ZIP as a **separate investigation**, open its generated tests, and
+run them with the host API and Docker runner. A failed test is the intended
+result for the broken fixture, not an application failure. The corrected ZIP
+retains the historical traceback solely as regression context, not as a claim
+that its corrected code currently throws that error. See
+[the fixture README](test-fixtures/README.md) for the full judge checklist.
+
+Create the broken case through the API:
 
 ```bash
 curl -sS -X POST http://localhost:8000/api/investigations \
   -F 'title=Broken Python smoke test' \
-  -F 'traceback=TypeError: can only concatenate str (not "int") to str' \
   -F 'archive=@test-fixtures/broken-python-project.zip'
 ```
 
 The response contains an investigation identifier and separate `facts`,
 `findings`, `hypotheses`, `generated_tests`, `execution_results`, and
 `verification` sections.
+
+Verify both ZIPs headlessly after installing dependencies and building the
+runner image:
+
+```bash
+PYTHONPATH=backend .venv/bin/python test-fixtures/check_zip_cases.py
+```
+
+This succeeds only when the broken ZIP fails for the expected TypeError and
+the corrected ZIP passes without skips. It does not need a running API.
 
 ## Detailed documentation
 

@@ -8,34 +8,44 @@ source without executing it on the host, and persists every result in SQLite.
 
 ## Setup
 
+Run all commands below from the **repository root**, containing `backend/` and
+`frontend/`. Use Python **3.9.21**, pinned in `backend/.python-version`:
+
 ```bash
-cd backend
 python3.9 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r backend/requirements.lock
 ```
 
-The pinned `requirements.txt` (also copied to `requirements.lock`) is the
-project lockfile. No model provider or external API is required.
+`backend/requirements.lock` pins direct and transitive backend/test
+dependencies; `requirements.txt` is not the complete lock. No model provider or
+external API is required. Judges should start with
+[the Linux reproduction guide](../README.linux.md).
 
 ## Run
 
-From `backend/`:
+From the repository root:
 
 ```bash
-.venv/bin/python -m uvicorn app.main:app --reload --port 8000
+.venv/bin/python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
-The service defaults to the bundled `../samples` directory and stores SQLite
-data and ingested projects under `backend/data/`. Copy `.env.example` to
-`.env` only when environment overrides are needed; the app reads environment
-variables directly.
+The service defaults to the repository's `samples/` directory and stores SQLite
+data and ingested projects under `backend/data/`. Root `.env` overrides are
+optional; exported environment variables take precedence. `backend/.env` is
+not loaded. Never commit private environment files.
 
 ## Test
 
-The single offline check is:
+The repository-wide offline check (after root setup) is:
 
 ```bash
 make test
+```
+
+Without Make, run backend tests directly:
+
+```bash
+PYTHONPATH=backend .venv/bin/python -m pytest -q backend/tests
 ```
 
 Tests use only the pinned local dependencies and do not require Docker. Docker
@@ -46,9 +56,9 @@ returns an `unavailable` result and never executes project code on the host.
 
 The canonical routes are under `/api`; identical root aliases are provided for
 simple local React proxy setups. FastAPI publishes the interactive contract at
-`/api/docs` and the OpenAPI document at `/api/openapi.json` when the app is
-served through a proxy that preserves the `/api` prefix (the app itself also
-serves `/docs` and `/openapi.json`).
+http://127.0.0.1:8000/docs and the OpenAPI document at
+http://127.0.0.1:8000/openapi.json. The `/api` prefix is for API routes, not the
+documentation endpoints.
 
 ### System and samples
 
@@ -109,5 +119,14 @@ run the API on the host:
 ```bash
 docker build -t code-aid-runner:0.1.0 -f execution/Dockerfile .
 CODE_AID_DOCKER_IMAGE=code-aid-runner:0.1.0 \
-  ../.venv/bin/python -m uvicorn app.main:app --app-dir . --port 8000
+  .venv/bin/python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 ```
+
+In another terminal, verify both public ZIP cases using that image:
+
+```bash
+PYTHONPATH=backend .venv/bin/python test-fixtures/check_zip_cases.py
+```
+
+Expected results are `failed` for the deliberately broken calculator and
+`passed` for the corrected calculator. See [fixture instructions](../test-fixtures/README.md).
