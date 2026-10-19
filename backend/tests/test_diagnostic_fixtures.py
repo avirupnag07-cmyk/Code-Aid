@@ -78,6 +78,9 @@ def test_available_fixture_toolchains_emit_normalized_locations(language_id, fil
 def test_relative_fixture_root_still_invokes_native_check_from_the_fixture_directory():
     result = AdapterRegistry().analyze(Path("backend/tests/fixtures/javascript"))
     assert result.detected_languages == ["javascript"]
+    toolchain = result.toolchains["javascript"]
+    if not toolchain["available"]:
+        pytest.skip("BLOCKED: {} ({})".format(toolchain["tool"], toolchain["reason"]))
     assert result.analyzed_files == ["broken.js"]
     diagnostic = next(item for item in result.diagnostics if item["code"] != "tool-unavailable")
     assert diagnostic["path"] == "broken.js"
