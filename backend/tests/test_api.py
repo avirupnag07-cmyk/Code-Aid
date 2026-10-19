@@ -1,5 +1,8 @@
 import io
+from types import SimpleNamespace
 import zipfile
+
+from app.engine import runner
 
 
 def test_health_and_sample_catalog_are_available(client):
@@ -146,10 +149,14 @@ def test_multipart_sample_creation_accepts_form_fields(client):
     assert created.json()["source"]["sample_id"] == "unexpected-type-bug"
 
 
-def test_patch_verification_is_non_mutating_and_rejects_escape(client):
+def test_patch_verification_is_non_mutating_and_rejects_escape(client, settings, monkeypatch):
+    # Stub only the runner's Docker discovery, leaving native analysis intact.
+    monkeypatch.setattr(runner, "shutil", SimpleNamespace(which=lambda _binary: None))
     created = client.post("/api/investigations", json={"sample_id": "simple-reproducible-bug"})
     assert created.status_code == 201
     record = created.json()
+    source = settings.storage_dir / record["id"] / "project" / "calculator.py"
+    original = source.read_bytes()
     result = client.post(
         "/api/investigations/{}/verify".format(record["id"]),
         json={"file_path": "calculator.py", "content": "def add_tax(amount, tax_rate):\n    return amount + float(tax_rate)\n"},
@@ -159,11 +166,13 @@ def test_patch_verification_is_non_mutating_and_rejects_escape(client):
     assert result.json()["verification"]["status"] == "execution-unavailable"
     assert result.json()["verification"]["baseline_execution"]["status"] == "unavailable"
     assert result.json()["verification"]["patched_execution"]["status"] == "unavailable"
+    assert source.read_bytes() == original
     unsafe = client.post(
         "/api/investigations/{}/verify".format(record["id"]),
         json={"file_path": "../secret.py", "content": "pass"},
     )
     assert unsafe.status_code == 400
+    assert source.read_bytes() == original
 
 
 def test_delete_removes_persisted_investigation(client):
