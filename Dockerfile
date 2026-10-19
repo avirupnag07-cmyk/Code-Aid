@@ -4,8 +4,7 @@
 # Run the API locally:
 #   docker run --rm --publish 127.0.0.1:8000:8000 --volume code_aid_data:/app/backend/data code-aid-api:0.1.0
 #
-# The frontend is deployed separately to Vercel. Set VITE_API_URL in Vercel to
-# http://localhost:8000/api when the deployed page should use this local API.
+# Compose builds and serves the frontend locally with an /api reverse proxy.
 
 FROM python:3.9.21-slim-bookworm
 

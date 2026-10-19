@@ -9,7 +9,7 @@ ifneq ($(wildcard /Applications/Docker.app/Contents/Resources/bin/docker),)
 export PATH := /Applications/Docker.app/Contents/Resources/bin:$(PATH)
 endif
 endif
-# Docker Desktop may install its CLI outside the shell's PATH. Do not change PATH.
+# Locate the CLI without changing system PATH or creating global symlinks.
 DOCKER ?= $(or $(shell command -v docker 2>/dev/null),$(wildcard /usr/local/bin/docker),docker)
 
 setup:

@@ -22,7 +22,7 @@ execution or patch check is recorded as evidence.
 ### Install
 
 ```bash
-git clone <your-local-copy>
+git clone https://github.com/avirupnag07-cmyk/Code-Aid.git
 cd Code-Aid
 make setup
 ```
@@ -30,6 +30,11 @@ make setup
 `make setup` creates the project-local `.venv`, installs the pinned backend
 lockfile, and installs the pinned frontend lockfile. No global package install
 is required.
+
+Run commands from the directory containing this `Makefile`, `backend/`, and
+`frontend/` (not a parent directory that happens to have the same name).
+To select an installed Python explicitly, use `make setup PYTHON_BIN=python3.9`.
+Docker builds use the exact pinned runtimes even if the host versions differ.
 
 ### Run locally
 
@@ -49,6 +54,25 @@ Open **http://localhost:5173**. The API health endpoint and interactive API
 contract are at **http://localhost:8000/api/health** and
 **http://localhost:8000/docs**.
 
+Both services run on your machine. Neither Vercel nor Render is required, and
+the default `/api` frontend URL goes through Vite's local proxy. Remove old
+`VITE_API_URL` overrides from your shell or `frontend/.env*` if they still point
+to a deleted deployment. Existing private environment files are not overwritten.
+
+For generated Python test execution, first start Docker Desktop (macOS) or your
+Docker Engine (Linux), then run:
+
+```bash
+make doctor
+make runner-build
+```
+
+Keep the backend running on the **host** using `make run-backend` for this mode.
+The project Makefile makes Docker Desktop's CLI and credential helper available
+on PATH to its child commands on macOS, without changing your shell profile or
+installing anything globally. `make doctor` reports runtime mismatches as
+warnings and missing dependencies/daemon access as failures.
+
 ### Run the checks
 
 ```bash
@@ -61,7 +85,7 @@ test suite offline using already-installed project dependencies.
 ### Start with Docker Compose
 
 ```bash
-docker compose up --build
+make docker-up
 ```
 
 Open **http://localhost:5173**. Compose persists SQLite data in the named
@@ -69,6 +93,11 @@ Open **http://localhost:5173**. Compose persists SQLite data in the named
 test execution therefore reports `unavailable` rather than executing uploaded
 code unsafely. See [Test execution](#test-execution-architecture) for the
 separate local runner setup.
+
+Stop with `make docker-down`; this retains investigations. Compose binds both
+published ports to `127.0.0.1`, not your LAN. If ports are occupied, use e.g.
+`CODE_AID_API_PORT=18000 CODE_AID_FRONTEND_PORT=15173 make docker-up` and open
+http://localhost:15173. Do not run host and Compose services on the same ports.
 
 ### Run a ZIP investigation
 
@@ -238,9 +267,14 @@ project virtual environment and `frontend/node_modules`.
 
 ### Environment variables
 
-Copy `.env.example` to `.env` for the common local overrides. The backend also
-supports the variables in `backend/.env.example`; it reads environment values
-directly rather than using a secret manager in this local MVP.
+Optionally copy `.env.example` to `.env` for local overrides (do not overwrite
+an existing private file). The backend reads the repository-root `.env` as data;
+exported process variables take precedence. Single-line quoted values and
+comments are supported; shell commands and variable interpolation are not run.
+The variables listed in `backend/.env.example` may also be set in the root file;
+`backend/.env` is not loaded. Relative paths are anchored to the repository.
+Vite separately reads `frontend/.env*`. Compose uses the root `.env` for its
+declared substitutions. No environment file is baked into Docker images.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -254,7 +288,7 @@ directly rather than using a secret manager in this local MVP.
 | `CODE_AID_MAX_SOURCE_FILE_BYTES` | `524288` | source/patch limit |
 | `CODE_AID_RUN_TIMEOUT_SECONDS` | `20` | default isolated run timeout |
 | `CODE_AID_DOCKER_IMAGE` | `code-aid-runner:0.1.0` | execution image name |
-| `CODE_AID_ALLOWED_ORIGINS` | `*` | comma-separated CORS origins |
+| `CODE_AID_ALLOWED_ORIGINS` | localhost and 127.0.0.1 on port 5173 | comma-separated CORS origins |
 
 Do not put tokens, credentials, source dumps, or private logs into `.env` or
 committed files. The initial web workflow has no authentication and accepts
@@ -284,33 +318,21 @@ VITE_API_URL=http://127.0.0.1:8000/api npm --prefix frontend run build
 The production container uses Nginx to serve the SPA and proxies `/api/` to the
 Compose backend service.
 
-#### Deploy the frontend to Vercel with a local API
+#### Local deployment without cloud hosting
 
-The root `vercel.json` installs the frontend with its existing
-`frontend/package-lock.json`, builds the Vite app, publishes `frontend/dist`,
-and rewrites client-side routes to `index.html`. When creating the Vercel
-project, add this environment variable before deploying:
+Use `make docker-up` to build the frontend and API and serve them together
+locally. Nginx routes `/api` to the backend over the private Compose network;
+neither a public API URL nor a Vercel/Render account is needed. `vercel.json`
+is retained only as an optional legacy frontend deployment configuration, not
+as part of local startup.
 
-```text
-VITE_API_URL=http://localhost:8000/api
-```
-
-The deployed page will call the API on the same computer where the browser is
-running. Start the backend locally with `make run-backend`, then set the
-backend's allowed origin to the deployed Vercel origin (without a trailing
-slash), for example:
-
-```text
-CODE_AID_ALLOWED_ORIGINS=https://your-project.vercel.app
-```
-
-Set `CODE_AID_ALLOWED_ORIGINS` in the backend environment before starting the
-API. Do not commit local environment files or credentials.
-
-This setup is intentionally a local investigation mode: a Vercel deployment
-cannot reach `localhost:8000` from another person's computer. If judges or
-teammates need a shared demo, deploy the API behind an HTTPS origin and set
-`VITE_API_URL` to that API's `/api` URL instead.
+For an access-controlled Linux machine, install Docker Engine with its Compose
+plugin and GNU Make, clone the repository, and run `make docker-up`. The first
+build needs internet access for base images and locked dependencies. Keep the
+default loopback binding and use a trusted SSH tunnel for remote access; this
+unauthenticated application is not safe to expose publicly. Back up the named
+data volume before replacing a machine. `make docker-down` stops the stack
+without deleting that volume.
 
 ### Database setup
 
@@ -441,9 +463,8 @@ is available, invokes a disposable container with:
 Build the dedicated runner image when you want host-local test execution:
 
 ```bash
-docker build -t code-aid-runner:0.1.0 -f execution/Dockerfile .
-CODE_AID_DOCKER_IMAGE=code-aid-runner:0.1.0 \
-  .venv/bin/python -m uvicorn app.main:app --app-dir backend --port 8000
+make runner-build
+make run-backend
 ```
 
 This still relies on the Docker daemon and its host policy. The Compose
@@ -585,6 +606,14 @@ size/member limits. Archives with absolute paths, `..`, symlinks, or no
 Docker available. Do not mount the Docker socket into the public Compose API as
 a workaround.
 
+**Docker is installed but the CLI or credential helper is missing from PATH.**
+Use the Makefile targets, which add the standard Docker Desktop tools directory
+to their own environment on macOS. For a nonstandard CLI install, use
+`make doctor DOCKER=/path/to/docker`. Start Docker Desktop directly if the
+daemon is stopped (`open -a Docker` on macOS), then rerun `make doctor`.
+Do not expose an unauthenticated TCP Docker daemon or mount its socket into the
+website container. The browser itself never executes Docker commands.
+
 **The database has stale records.** Stop the API and remove `backend/data/` or
 the Compose `code_aid_data` volume only when you intend to discard local
 investigations.
@@ -603,7 +632,7 @@ make docker-run
 The image persists SQLite state in the named `code_aid_data` volume. It does
 not mount the host Docker socket, so Docker-only generated-test execution is
 reported as unavailable by design. The frontend is built and served separately
-by Vercel (or by the Compose service below).
+by the Compose service below (or a separately configured static host).
 
 The root `compose.yaml` builds two services:
 
