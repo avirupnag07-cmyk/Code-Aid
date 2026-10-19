@@ -1,10 +1,8 @@
 services:
   backend:
     build:
-      args:
-        BUILDTYPE: production
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     environment:
       CODE_AID_DATABASE: /app/backend/data/code_aid.sqlite3
       CODE_AID_STORAGE: /app/backend/data/investigations
@@ -15,8 +13,7 @@ services:
       - code_aid_data:/app/backend/data
 
     ports:
-      - "8000:8000"
-
+      - "127.0.0.1:${CODE_AID_API_PORT:-8000}:8000"
 
   frontend:
     build:
@@ -26,7 +23,7 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "5173:80"
+      - "127.0.0.1:${CODE_AID_FRONTEND_PORT:-5173}:80"
 
 volumes:
   code_aid_data:
