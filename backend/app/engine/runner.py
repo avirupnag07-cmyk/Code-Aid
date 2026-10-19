@@ -13,6 +13,8 @@ import tempfile
 import time
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
+from .ingestion import IGNORED_DIRECTORIES
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -68,6 +70,54 @@ def _safe_project_root(project_root: Path) -> Path:
     return root
 
 
+def _python_import_roots(project_root: Path) -> List[str]:
+    """Discover container import roots using directory metadata, never imports.
+
+    Only a sole meaningful directory can be an archive wrapper. Files or
+    sibling directories end that chain, as do Python package boundaries. A
+    conventional src layout is added explicitly, without descending into its
+    module directories. The uploaded root always retains first precedence.
+    """
+
+    roots: List[str] = []
+
+    def add_root(path: Path) -> None:
+        relative = path.relative_to(project_root)
+        container_path = str(PurePosixPath("/workspace", *relative.parts))
+        if any(character in container_path for character in (":", "\n", "\r", "\x00")):
+            raise ValueError(
+                "import root {!r} cannot be represented safely in PYTHONPATH "
+                "(colon, newline, or NUL in path)".format(container_path)
+            )
+        roots.append(container_path)
+
+    current = project_root
+    ignored_directories = IGNORED_DIRECTORIES | {"node_modules", ".nox", ".eggs"}
+    while True:
+        add_root(current)
+        source_root = current / "src"
+        if source_root.is_dir():
+            add_root(source_root)
+
+        meaningful = []
+        for entry in current.iterdir():
+            if entry.name in {"__MACOSX", ".DS_Store"} or entry.name.startswith("._"):
+                continue
+            if entry.is_dir() and (
+                entry.name in ignored_directories or entry.name.endswith(".egg-info")
+            ):
+                continue
+            meaningful.append(entry)
+        if len(meaningful) != 1 or not meaningful[0].is_dir():
+            break
+        child = meaningful[0]
+        if child.name == "src" or (child / "__init__.py").is_file():
+            break
+        current = child
+
+    return roots
+
+
 def _staged_project(root: Path, overrides: Mapping[str, str]) -> Path:
     """Make a disposable source copy and apply text overrides as data."""
 
@@ -119,6 +169,10 @@ def run_generated_tests(
         except (OSError, ValueError, shutil.Error) as exc:
             return _unavailable("Proposed source could not be staged safely: {}".format(exc))
     try:
+        try:
+            pythonpath = ":".join(_python_import_roots(execution_root))
+        except (OSError, ValueError) as exc:
+            return _unavailable("Project import roots could not be prepared safely: {}".format(exc))
         with tempfile.TemporaryDirectory(prefix="code-aid-generated-") as generated_dir_name:
             generated_dir = Path(generated_dir_name)
             os.chmod(str(generated_dir), 0o755)
@@ -161,7 +215,7 @@ def run_generated_tests(
                 "-e",
                 "PYTHONDONTWRITEBYTECODE=1",
                 "-e",
-                "PYTHONPATH=/workspace",
+                "PYTHONPATH={}".format(pythonpath),
                 "-v",
                 "{}:/workspace:ro".format(execution_root),
                 "-v",
