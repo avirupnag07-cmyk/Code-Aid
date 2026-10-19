@@ -7,3 +7,10 @@ frontend/coverage
 *.sqlite3
 *.log
 .DS_Store
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+__pycache__
+.pytest_cache

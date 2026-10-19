@@ -2,6 +2,13 @@
 
 PYTHON ?= .venv/bin/python
 PYTHON_BIN ?= python3
+# Scope Docker Desktop's CLI/credential-helper PATH to project commands only.
+# Linux keeps its normal PATH; no shell profile or system symlink is changed.
+ifeq ($(shell uname -s),Darwin)
+ifneq ($(wildcard /Applications/Docker.app/Contents/Resources/bin/docker),)
+export PATH := /Applications/Docker.app/Contents/Resources/bin:$(PATH)
+endif
+endif
 # Docker Desktop may install its CLI outside the shell's PATH. Do not change PATH.
 DOCKER ?= $(or $(shell command -v docker 2>/dev/null),$(wildcard /usr/local/bin/docker),docker)
 
