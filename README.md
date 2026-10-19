@@ -472,6 +472,14 @@ deployment intentionally leaves execution unavailable rather than mounting the
 Docker socket into a network-facing API. A future production deployment should
 use a separate execution service with an explicit authorization boundary.
 
+The isolated runner supports flat Python projects, a single ZIP wrapper-folder
+chain, and conventional `src/` layouts. It adds these directories to the
+container's Python import path without moving uploaded files or changing host
+Python settings. Python package boundaries and ambiguous sibling projects are
+not flattened. Custom layouts still require matching module names in metadata;
+third-party dependencies are not installed automatically. Existing investigations
+can be rerun after restarting the backend to pick up import-path fixes.
+
 The generated test is either an expected-behavior regression test (when the
 sample provides an expected value) or an explicitly labeled exception
 reproduction test. A passing exception-reproduction test means the reported

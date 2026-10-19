@@ -238,6 +238,26 @@ def _ingest_calculator_zip(tmp_path, source_dir):
     return project, tests
 
 
+@pytest.mark.parametrize("wrapper", ["unsafe:wrapper", "unsafe\nwrapper"])
+def test_unrepresentable_import_root_is_rejected_before_docker(
+    tmp_path, captured_docker, wrapper,
+):
+    _write_files(tmp_path, {wrapper + "/calculator.py": PATCHED_CALCULATOR})
+    result = runner.run_generated_tests(tmp_path, _generated_test())
+    assert result["status"] == "unavailable"
+    assert "PYTHONPATH" in result["reason"]
+    assert captured_docker == []
+
+
+def test_meaningful_root_file_prevents_guessing_wrapper(tmp_path, captured_docker):
+    _write_files(tmp_path, {
+        "README.md": "Multiple import layouts need explicit package imports.",
+        "nested/calculator.py": PATCHED_CALCULATOR,
+    })
+    runner.run_generated_tests(tmp_path, _generated_test("nested.calculator"))
+    assert _pythonpath(captured_docker[0]["command"]) == ["/workspace"]
+
+
 @pytest.mark.skipif(not os.environ.get("CODE_AID_TEST_DOCKER"), reason="opt-in Docker integration")
 @pytest.mark.parametrize("source_dir", [REPORTED_WRAPPER, "src", "wrapper/src"])
 def test_real_docker_imports_reach_calculator_typeerror_then_patched_override_passes(tmp_path, source_dir):
