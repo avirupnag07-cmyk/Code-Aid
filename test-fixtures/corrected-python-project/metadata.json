@@ -1,0 +1,15 @@
+{
+  "name": "Corrected tax calculator",
+  "description": "A corrected regression fixture. The bundled TypeError traceback is the original bug report, not a current error in this code.",
+  "category": "upload-smoke-test",
+  "exception_type": "TypeError",
+  "traceback_status": "historical-original-bug-report",
+  "entry_file": "calculator.py",
+  "module": "calculator",
+  "target_function": "total_with_tax",
+  "test_spec": {
+    "function": "total_with_tax",
+    "args": [100.0, "8"],
+    "expected": 108.0
+  }
+}

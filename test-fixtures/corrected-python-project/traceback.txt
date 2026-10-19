@@ -1,0 +1,7 @@
+Historical original bug report retained for regression testing.
+This traceback came from the broken fixture, NOT the corrected code.
+
+Traceback (most recent call last):
+  File "calculator.py", line 3, in total_with_tax
+    return amount + "$" + tax_rate
+TypeError: unsupported operand type(s) for +: 'float' and 'str'
