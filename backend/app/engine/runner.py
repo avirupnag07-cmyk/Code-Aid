@@ -165,7 +165,7 @@ def run_generated_tests(
                 "-v",
                 "{}:/workspace:ro".format(execution_root),
                 "-v",
-                "{}:/workspace/generated_tests:ro".format(generated_dir),
+                "{}:/generated-tests:ro".format(generated_dir),
                 "-w",
                 "/workspace",
                 docker_image,
@@ -177,7 +177,7 @@ def run_generated_tests(
                 "--no-header",
                 "-p",
                 "no:cacheprovider",
-                "/workspace/generated_tests",
+                "/generated-tests",
             ]
             try:
                 completed = subprocess.run(

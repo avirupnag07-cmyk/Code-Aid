@@ -53,9 +53,8 @@ def test_doctor_handles_missing_cli_and_hung_daemon(monkeypatch):
 def test_runner_image_accepts_backend_command_and_preserves_isolation(tmp_path):
     project = tmp_path / "project"
     project.mkdir(mode=0o755)
-    # The backend mounts generated tests inside a read-only project mount.
-    # Docker needs this nested mountpoint to exist in the source directory.
-    (project / "generated_tests").mkdir(mode=0o755)
+    # Real uploads need not contain a generated_tests mountpoint. Execution
+    # must not create one inside or otherwise mutate the read-only source.
     result = runner.run_generated_tests(
         project,
         [{"path": "generated_tests/test_smoke.py", "content": """
@@ -75,3 +74,4 @@ def test_isolated_runtime():
         docker_binary=os.environ["CODE_AID_TEST_DOCKER"],
     )
     assert result["status"] == "passed", result
+    assert list(project.iterdir()) == []

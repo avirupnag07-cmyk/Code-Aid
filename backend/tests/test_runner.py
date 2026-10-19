@@ -1,6 +1,28 @@
 from pathlib import Path
+import subprocess
 
 from app.engine import runner
+
+
+def test_generated_mount_is_outside_read_only_project(monkeypatch, tmp_path):
+    monkeypatch.setattr(runner.shutil, "which", lambda _binary: "/usr/bin/docker")
+    commands = []
+
+    def completed(command, **kwargs):
+        commands.append(command)
+        return subprocess.CompletedProcess(command, 0, "1 passed", "")
+
+    monkeypatch.setattr(runner.subprocess, "run", completed)
+    result = runner.run_generated_tests(
+        tmp_path,
+        [{"path": "generated_tests/test_case.py", "content": "def test_x(): pass"}],
+    )
+    assert result["status"] == "passed"
+    command = commands[0]
+    assert command[-1] == "/generated-tests"
+    assert any(value.endswith(":/generated-tests:ro") for value in command)
+    assert not any(":/workspace/generated_tests" in value for value in command)
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_runner_fails_safe_when_docker_is_missing(monkeypatch, tmp_path: Path):
